@@ -17,6 +17,8 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
   build-depends:       base >= 4.7 && < 5
+                     , filepath
+                     , containers
   default-language:    Haskell2010
 
 executable bioalgo-exe
@@ -25,6 +27,7 @@ executable bioalgo-exe
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , bioalgo
+                     , containers
   default-language:    Haskell2010
 
 test-suite bioalgo-test
