@@ -30,6 +30,16 @@ execute (Command "hello" _) = do
   putStrLn "Please call me with a command"
   putStrLn "!!! BYE for now !!!"
 
+execute (Command "pattern-count" argMap) = do
+  text <- readFile fname
+  pcounts <- return $ patternCount text pattern
+  putStr "number of appearances of "
+  putStr  pattern
+  putStr ": "
+  putStrLn (show pcounts)
+  where
+    fname   = argMap ! "f"
+    pattern = argMap ! "p"
 
 execute (Command "most-frequent-kmers" argMap) = do
   text <- readFile f
