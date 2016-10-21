@@ -3,6 +3,7 @@ module Kmers where
 import Data.Map (Map, (!))
 import Data.List (sortBy)
 import qualified Data.Map as M
+import Data.Maybe
 
 hiddenMessage                      :: String -> String
 hiddenMessage text                 = "???"
@@ -64,3 +65,37 @@ areMatchingPatterns [] []          = True
 areMatchingPatterns (x:_) []       = False
 areMatchingPatterns [] (y:_)       = False
 areMatchingPatterns (x:xs) (y:ys)  = (x == y) && (areMatchingPatterns xs ys)
+
+
+prefixes                           :: String -> String -> Bool
+prefixes [] []                     = True
+prefixes [] (y:_)                  = False
+prefixes (x:_) []                  = True
+prefixes (x:xs) (y:ys)             = (x == y) && (prefixes xs ys)
+
+occurences                         :: String -> String -> [Int]
+occurences text pattern            = occsWithPos 0 text pattern
+  where
+    occsWithPos _ [] []        = []
+    occsWithPos _ [] (y:_)     = []
+    occsWithPos _ (x:_) []     = []
+    occsWithPos p text pattern = if (prefixes text pattern)
+                                 then p : ns
+                                 else ns
+                                 where ns = occsWithPos (p + 1) (drop 1 text) pattern
+
+nextOccFrom                         :: String -> Int -> String -> Maybe Int
+nextOccFrom  []   _   []            =  Nothing
+nextOccFrom  []   _  (x:_)          =  Nothing
+nextOccFrom (x:_) _   []            =  Nothing
+nextOccFrom text  p pattern         =  if (prefixes text pattern)
+                                       then Just p
+                                       else nextOccFrom (drop 1 text) (p + 1) pattern
+
+occurences2                         :: String -> String -> [Int]
+occurences2 [] []                   = []
+occurences2 [] (y:_)                = []
+occurences2 (x:_) []                = []
+occurences2 text pattern            = case (nextOccFrom text 0 pattern) of
+  Nothing -> []
+  Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 (drop (n + 1) text) pattern)

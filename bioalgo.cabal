@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src/lib
   exposed-modules:     Lib
                      , Kmers
+                     , Dna
   build-depends:       base >= 4.7 && < 5
                      , filepath
                      , containers
@@ -30,7 +31,6 @@ executable bioalgo-tools
                      , bioalgo
                      , containers
   default-language:    Haskell2010
-
 test-suite bioalgo-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
