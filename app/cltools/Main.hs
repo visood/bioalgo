@@ -12,9 +12,10 @@ import Kmers
 main :: IO ()
 main = do
   args <- getArgs
+  command <- return $ readCommand args
   putStr "Command: "
-  print args
-  dispatch args
+  print (astr command)
+  execute command
 
 dispatch        :: [String] -> IO ()
 dispatch ["-h"] = usage >> exit
