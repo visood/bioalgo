@@ -1,5 +1,6 @@
 module Lib where
 
+import Data.Tuple
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Kmers
@@ -7,6 +8,11 @@ import Kmers
 data Command = Command {utility  :: String,
                         arguments :: Map String String
                        } deriving (Show)
+
+astr :: Command -> String
+astr command = foldl (
+  \s xy -> s ++ " -" ++ (fst xy) ++ "=" ++ (snd xy) ++ " "
+  ) (utility command)  (M.toList (arguments command) )
 
 emptyCommand :: Command
 emptyCommand = Command "do-nothing" M.empty
