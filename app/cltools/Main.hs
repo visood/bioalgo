@@ -12,18 +12,22 @@ import Kmers
 main :: IO ()
 main = do
   args <- getArgs
-  command <- return $ readCommand args
-  putStr "Command: "
-  print (astr command)
-  execute command
+  dispatch args
 
 dispatch        :: [String] -> IO ()
-dispatch ["-h"] = usage >> exit
+dispatch ["-h"] = cltoolsUsage >> exit
 dispatch ["-v"] = version >> exit
+dispatch (u:("-h"):_) = putStrLn (usage u) >> exit
 dispatch []     = getContents >> exit
 dispatch args   = execute (readCommand args)
 
-usage          = putStrLn "Usage: [-vh] [-k=<kmer-size> -n=<top-kmers> -f=<sequence-file]"
+
+
+cltoolsUsage = do
+  putStrLn "Usage: [-vh] utility arguments"
+  putStrLn "Available utilities: "
+  mapM (\ua -> putStrLn ((fst ua) ++ " " ++ (snd ua))) (M.toList availableCommands)
+
 version        = putStrLn "version 0.1"
 exit           = exitWith ExitSuccess
 die            = exitWith (ExitFailure 1)

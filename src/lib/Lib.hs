@@ -3,6 +3,7 @@ module Lib where
 import Data.Tuple
 import Data.Map (Map, (!))
 import qualified Data.Map as M
+import Data.Char
 import Kmers
 
 data Command = Command {utility  :: String,
@@ -17,9 +18,18 @@ astr command = foldl (
 emptyCommand :: Command
 emptyCommand = Command "do-nothing" M.empty
 
+
+
 readCommand :: [String] -> Command
 readCommand [] = emptyCommand
-readCommand (u:args) = Command u (readArgs args)
+readCommand (u:args) = if (wordWithAllowedChars u)
+                       then Command u (readArgs args)
+                       else Command "unspecified-utility" M.empty
+
+wordWithAllowedChars :: String -> Bool
+wordWithAllowedChars []   = False
+wordWithAllowedChars (x:xs) = (isAlphaNum x) && (all (\c -> (c == '-') || (isAlphaNum c)) xs)
+
 
 readArgs :: [String] -> Map String String
 readArgs = M.fromList . (map readOneArg)
@@ -27,6 +37,19 @@ readArgs = M.fromList . (map readOneArg)
 readOneArg :: String -> (String, String)
 readOneArg s = (dropWhile (=='-') u, dropWhile (=='=') v)
   where (u, v) = break (=='=') s
+
+
+availableCommands :: Map String String
+availableCommands = M.fromList [("pattern-count",
+                                 "-f=<file-name> -p=<pattern>"),
+                                ("most-frequent-kmers",
+                                 "-f=<file-name> -k=<kmer-size> -n=<number>")
+                               ]
+
+usage :: String -> String
+usage u = if M.notMember u availableCommands
+          then "Exception: " ++ u ++ " is not a valid command."
+          else "Usage: " ++ u ++ " " ++ (availableCommands ! u)
 
 
 execute :: Command -> IO ()
@@ -37,15 +60,12 @@ execute (Command "hello" _) = do
   putStrLn "!!! BYE for now !!!"
 
 execute (Command "pattern-count" argMap) = do
-  text <- readFile fname
-  pcounts <- return $ patternCount text pattern
+  text <- readFile (argMap ! "f")
+  pcounts <- return $ patternCount text (argMap ! "p")
   putStr "number of appearances of "
-  putStr  pattern
+  putStr  (argMap ! "p")
   putStr ": "
   putStrLn (show pcounts)
-  where
-    fname   = argMap ! "f"
-    pattern = argMap ! "p"
 
 execute (Command "most-frequent-kmers" argMap) = do
   text <- readFile f
