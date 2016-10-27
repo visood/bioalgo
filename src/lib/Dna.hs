@@ -16,3 +16,10 @@ complement  b  =  b
 reverseComplement :: String -> String
 
 reverseComplement = foldl (\rs x -> (complement x):rs) []
+
+isBase :: Char -> Bool
+isBase c = c == 'A' || c == 'C' || c == 'G' || c == 'T'
+
+isDNA :: String -> Bool
+isDNA seq = all isBase  seq
+

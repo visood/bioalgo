@@ -1,10 +1,12 @@
 module Lib where
 
+import System.Exit
 import Data.Tuple
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Char
 import Kmers
+import Dna
 
 data Command = Command {utility  :: String,
                         arguments :: Map String String
@@ -16,7 +18,7 @@ astr command = foldl (
   ) (utility command)  (M.toList (arguments command) )
 
 emptyCommand :: Command
-emptyCommand = Command "do-nothing" M.empty
+emptyCommand = Command "empty-command" M.empty
 
 
 
@@ -24,7 +26,7 @@ readCommand :: [String] -> Command
 readCommand [] = emptyCommand
 readCommand (u:args) = if (wordWithAllowedChars u)
                        then Command u (readArgs args)
-                       else Command "unspecified-utility" M.empty
+                       else Command "illegal-utility" M.empty
 
 wordWithAllowedChars :: String -> Bool
 wordWithAllowedChars []   = False
@@ -57,6 +59,7 @@ execute :: Command -> IO ()
 execute (Command "hello" _) = do
   putStrLn "Hello jee! What may bioalgo tools do for you?"
   putStrLn "Please call me with a command"
+  putStrLn ""
   putStrLn "!!! BYE for now !!!"
 
 execute (Command "pattern-count" argMap) = do
@@ -90,7 +93,24 @@ execute (Command "most-frequent-kmers" argMap) = do
     n = read (argMap ! "n") :: Int
     f = argMap ! "f"
 
+execute (Command "reverse-complement" argMap) = do
+  putStrLn (if (isDNA seq) then reverseComplement seq else "Not a DNA sequence")
+  where seq = argMap ! "s"
+
+execute  (Command "illegal-utility" _) = do
+  putStrLn "Exception: illegal utility name."
+  cltoolsUsage >> exitWith ExitSuccess
+
+execute (Command "empty-command" _) = do
+  putStrLn "Exception: utility not specified."
+  cltoolsUsage >> exitWith ExitSuccess
+
 execute (Command s _) = do
-  putStr "unknown command "
-  putStrLn s
+  putStrLn ("Exception: unknown utility " ++ s ++ ".")
+  cltoolsUsage >> exitWith ExitSuccess
+
+cltoolsUsage = do
+  putStrLn "Usage: [-vh] utility arguments"
+  putStrLn "Available utilities: "
+  mapM (\ua -> putStrLn ((fst ua) ++ " " ++ (snd ua))) (M.toList availableCommands)
 
