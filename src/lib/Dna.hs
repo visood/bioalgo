@@ -1,19 +1,31 @@
 module Dna where
 
-complement :: Char -> Char
-complement 'A' = 'T'
-complement 'a' = 't'
-complement 'C' = 'G'
-complement 'c' = 'g'
-complement 'G' = 'C'
-complement 'g' = 'c'
-complement 'T' = 'A'
-complement 't' = 'a'
-complement 'N' = 'N'
-complement 'n' = 'n'
-complement  b  =  b
+class Ord a => Base a where
+  allowed     :: [a]
+  complement  :: a -> a
+  valid       :: a -> Bool
+  valid x     = elem x allowed
+  symbol      :: a -> Char
 
-reverseComplement :: String -> String
+instance Base Char where
+  allowed      = ['A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't']
+  complement c = case c of
+    'A' -> 'T'
+    'a' -> 't'
+    'C' -> 'G'
+    'c' -> 'g'
+    'G' -> 'C'
+    'g' -> 'c'
+    'T' -> 'A'
+    't' -> 'a'
+    'N' -> 'N'
+    'n' -> 'n'
+    _   ->  c
+
+  symbol c = c
+
+
+reverseComplement :: Base a => [a] -> [a]
 
 reverseComplement = foldl (\rs x -> (complement x):rs) []
 
