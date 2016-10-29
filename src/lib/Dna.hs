@@ -96,9 +96,9 @@ addClump :: Int -> [[Int]] -> Int -> [[Int]]
 addClump l xss x = case xss of
   []     -> [[x]]
   xs:yss -> if (abs (x - (last xs))) <= l
-            then xs:(x:xs):rest
-            else xs:rest
+            then (x:xs):rest
+            else rest
             where rest = addClump l yss x
 
 clumps :: Int -> Int -> [Int] -> [[Int]]
-clumps l t xs = [ys | ys <- (foldl (addClump l) [] xs), length ys >= t]
+clumps l t xs = [ys | ys <- (foldl (\xss x -> (addClump l xss x) ++ xss) [] xs), length ys >= t]
