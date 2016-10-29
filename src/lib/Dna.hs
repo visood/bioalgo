@@ -43,19 +43,62 @@ isBase c = c == 'A' || c == 'C' || c == 'G' || c == 'T'
 isDNA :: String -> Bool
 isDNA seq = all isBase  seq
 
-class Eq a => Located a where
-  pos       :: a -> Int
-  distance  :: a -> a -> Int
-  distance x y = abs ((pos x) - (pos y))
+
+class WithBaseSeq b where
+  bseq :: Base a => (b a) -> [a]
+
+class Located a where
+  loc       :: a -> Int
+  dis       :: a -> a -> Int
+  dis x y   = abs ((loc x) - (loc y))
 
 data Kmer a where
   Kmer :: Base a => [a] -> Int -> Kmer a
 
-sequence :: Base a => Kmer a -> [a]
-sequence (Kmer seq p) = seq
+instance Base a => Eq (Kmer a) where
+  (==) (Kmer s p) (Kmer r q) = s == r && p == q
 
-position :: Base a => Kmer a -> Int
-position (Kmer seq p) = p
+instance Base a => Located (Kmer a) where
+  loc (Kmer _ p) = p
 
-instance Located (Kmer a) where
-  pos k = position k
+instance WithBaseSeq Kmer where
+  bseq (Kmer s _) = s
+
+class Cluster a where
+  locs      :: a -> [Int]
+  leftmost  :: a -> Int
+  leftmost a = if null xs
+               then -1
+               else head xs
+    where xs = locs a
+  rightmost :: a -> Int
+  rightmost a = if null xs
+                then -1
+                else last xs
+    where xs = locs a
+  size      :: a -> Int
+  size a    = length (locs a)
+
+-- to use Prelude.length
+instance Foldable Kmer where
+  foldMap f (Kmer s _) = foldMap f s
+
+data Clumer a where
+  Clumer :: Base a => [a] -> [Int] -> Clumer a
+
+instance Cluster (Clumer a) where
+  locs (Clumer _ xs) = xs
+
+instance WithBaseSeq Clumer where
+  bseq (Clumer s _) = s
+
+addClump :: Int -> [[Int]] -> Int -> [[Int]]
+addClump l xss x = case xss of
+  []     -> [[x]]
+  xs:yss -> if (abs (x - (last xs))) <= l
+            then xs:(x:xs):rest
+            else xs:rest
+            where rest = addClump l yss x
+
+clumps :: Int -> Int -> [Int] -> [[Int]]
+clumps l t xs = [ys | ys <- (foldl (addClump l) [] xs), length ys >= t]
