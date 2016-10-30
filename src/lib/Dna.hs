@@ -123,9 +123,14 @@ addClump l xss x = case xss of
             else rest
             where rest = addClump l yss x
 
-clumps :: Int -> Int -> [Int] -> [[Int]]
-clumps l t xs = filter (\ys -> length ys >= t)
-                       (foldl (\xss x -> (addClump l xss x) ++ xss) [] xs)
+clumpInts :: Int -> Int -> [Int] -> [[Int]]
+clumpInts l t xs = filter (\ys -> length ys >= t)
+                          (foldl (\xss x -> (addClump l xss x) ++ xss) [] xs)
+
+clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
+clumps l t (Clumer s xs) = map (\ys -> Clumer s (Set.fromList ys))
+                               (clumpInts l t (Set.toList xs))
+
 
 
 
