@@ -1,5 +1,12 @@
-{-#LANGUAGE GADTs #-}
+{-#LANGUAGE GADTs, StandaloneDeriving #-}
 module Dna where
+
+import Data.List (sort)
+import Data.Set (Set)
+import qualified Data.Set as Set
+
+invalidPos :: Int
+invalidPos = -1
 
 class Ord a => Base a where
   allowed     :: [a]
@@ -48,8 +55,8 @@ class WithBaseSeq b where
   bseq :: Base a => (b a) -> [a]
 
 class Located a where
-  loc       :: a -> Int
-  dis       :: a -> a -> Int
+  loc       :: Base b => (a b) -> Int
+  dis       :: Base b => Located c => (a b) -> (c b) -> Int
   dis x y   = abs ((loc x) - (loc y))
 
 data Kmer a where
@@ -58,36 +65,52 @@ data Kmer a where
 instance Base a => Eq (Kmer a) where
   (==) (Kmer s p) (Kmer r q) = s == r && p == q
 
-instance Base a => Located (Kmer a) where
+instance Located Kmer where
   loc (Kmer _ p) = p
 
 instance WithBaseSeq Kmer where
   bseq (Kmer s _) = s
 
-class Cluster a where
-  locs      :: a -> [Int]
-  leftmost  :: a -> Int
-  leftmost a = if null xs
-               then -1
-               else head xs
-    where xs = locs a
-  rightmost :: a -> Int
-  rightmost a = if null xs
-                then -1
-                else last xs
-    where xs = locs a
-  size      :: a -> Int
-  size a    = length (locs a)
-
 -- to use Prelude.length
 instance Foldable Kmer where
   foldMap f (Kmer s _) = foldMap f s
 
-data Clumer a where
-  Clumer :: Base a => [a] -> [Int] -> Clumer a
+class Cluster a where
+  element   :: Base b => (a b) -> [b]
+  poses     :: Base b => (a b) -> Set Int
+  leftmost  :: Base b => (a b) -> Int
+  leftmost a = if null xs
+               then invalidPos
+               else Set.findMin xs
+               where xs = poses a
+  rightmost :: Base b => (a b) -> Int
+  rightmost a = if null xs
+                then invalidPos
+                else Set.findMax xs
+                where xs = poses a
+  size      :: Base b => (a b) -> Int
+  size a    = Set.size (poses a)
 
-instance Cluster (Clumer a) where
-  locs (Clumer _ xs) = xs
+  merge     :: (Base b, Cluster c) => (c b) -> (a b) -> (a b)
+  absorb    :: Base b => Kmer b -> (a b) -> (a b)
+
+data Clumer a where
+  Clumer :: Base a => [a] -> Set Int -> Clumer a
+
+deriving instance Show a => Show (Clumer a)
+
+instance Located Clumer where
+  loc   (Clumer _  xs) = Set.findMin xs
+
+instance Cluster Clumer where
+  element (Clumer s  _) = s
+  poses (Clumer _  xs) = xs
+  merge c (Clumer s xs) = if element c == s
+                          then Clumer s (Set.union (poses c) xs)
+                          else Clumer s xs
+  absorb (Kmer s x) (Clumer r ys) = if s == r
+                                    then Clumer r (Set.insert x ys)
+                                    else Clumer r ys
 
 instance WithBaseSeq Clumer where
   bseq (Clumer s _) = s
@@ -101,4 +124,8 @@ addClump l xss x = case xss of
             where rest = addClump l yss x
 
 clumps :: Int -> Int -> [Int] -> [[Int]]
-clumps l t xs = [ys | ys <- (foldl (\xss x -> (addClump l xss x) ++ xss) [] xs), length ys >= t]
+clumps l t xs = filter (\ys -> length ys >= t)
+                       (foldl (\xss x -> (addClump l xss x) ++ xss) [] xs)
+
+
+
