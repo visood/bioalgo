@@ -40,6 +40,17 @@ kmerCounts k text                  = if (length kmer) < k
                                        kmer = take k text
                                        kcounts = kmerCounts k (drop 1 text)
 
+kmerOccs                           :: Base a => Int -> [a] -> Map [a] [Int]
+kmerOccs k text                    = kmerOccsWithPos 0 k text
+  where
+    kmerOccsWithPos :: Base a => Int -> Int -> [a] -> Map [a] [Int]
+    kmerOccsWithPos p k text = if (length kmer) < k
+                               then M.empty
+                               else M.insertWith (++) kmer [p] koccs
+                               where
+                                 kmer = take k text
+                                 koccs = kmerOccsWithPos (p + 1) k (drop 1 text)
+
 wordCounts                         :: Base a => [[a]] -> Map [a] Int
 wordCounts words                   = foldl (\m w -> M.insertWith (+) w 1 m) M.empty words
 
@@ -76,13 +87,14 @@ isPrefix (x:xs) (y:ys)             = (x == y) && (isPrefix xs ys)
 occurences                         :: Base a =>  [a] -> [a] -> [Int]
 occurences pattern text            = occsWithPos 0 pattern text
   where
+    occsWithPos :: Base a => Int -> [a] -> [a] -> [Int]
     occsWithPos _ [] []        = []
     occsWithPos _ [] (y:_)     = []
     occsWithPos _ (x:_) []     = []
     occsWithPos p pattern text = if (isPrefix pattern text)
                                  then p : ns
                                  else ns
-                                 where ns = occsWithPos (p + 1) (drop 1 text) pattern
+                                 where ns = occsWithPos (p + 1) pattern (drop 1 text)
 
 nextOccFrom                         :: Base a => [a] -> Int -> [a] -> Maybe Int
 nextOccFrom  []   _   []            =  Nothing
