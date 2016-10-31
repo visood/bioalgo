@@ -9,10 +9,10 @@ import Dna
 --hiddenMessage                      :: Base a =>  [a] -> [a]
 --hiddenMessage text                 = "???"
 
-mostFrequentKmers                  :: Base a => [a] -> Int -> (Int, [[a]])
-mostFrequentKmers text k           = (n, m ! n)
+mostFrequentKmers                  :: Base a => Int -> [a] -> (Int, [[a]])
+mostFrequentKmers k text           = (n, m ! n)
                                      where
-                                       m = frequentKmers text k
+                                       m = frequentKmers k text
                                        n = (maximum . M.keys) m
 
 topFrequentKmers                   :: Base a => Int -> Map [a] Int -> [([a], Int)]
@@ -24,8 +24,8 @@ sortGT (a1, b1) (a2, b2)
   | a1 < a2   = GT
   | otherwise = LT
 
-frequentKmers                      :: Base a => [a] -> Int -> Map Int [[a]]
-frequentKmers text k               = invertedMap (kmerCounts k text)
+frequentKmers                      :: Base a => Int -> [a] -> Map Int [[a]]
+frequentKmers k text               = invertedMap (kmerCounts k text)
 
 invertedMap                        :: (Base a, Ord b) => Map [a] b -> Map b [[a]]
 invertedMap                        = M.foldlWithKey (\m a b ->
@@ -43,23 +43,23 @@ kmerCounts k text                  = if (length kmer) < k
 wordCounts                         :: Base a => [[a]] -> Map [a] Int
 wordCounts words                   = foldl (\m w -> M.insertWith (+) w 1 m) M.empty words
 
-allKmers                            :: Base a => [a] -> Int -> [[a]]
-allKmers text k                     = take ((length text) - k + 1) (allKmers0 text k)
+allKmers                            :: Base a => Int -> [a] -> [[a]]
+allKmers k text                      = take ((length text) - k + 1) (allKmers0 k text)
 
-allKmers0                           :: Base a => [a] -> Int -> [[a]]
-allKmers0 text k                    = if null text
+allKmers0                           :: Base a => Int -> [a] -> [[a]]
+allKmers0 k text                    = if null text
                                       then []
-                                      else (take k text) : (allKmers0 (drop 1 text) k)
+                                      else (take k text) : (allKmers0 k (drop 1 text))
 
 patternCount                       :: Base a =>  [a] -> [a] -> Int
 patternCount _ []                  = 0
 patternCount [] _                  = 0
-patternCount text pattern          = if (areMatchingPatterns (take l text) pattern)
+patternCount pattern text          = if (areMatchingPatterns (take l text) pattern)
                                      then 1 + n
                                      else n
                                      where
                                        l = length pattern
-                                       n = patternCount (drop 1 text) pattern
+                                       n = patternCount pattern (drop 1 text)
 
 areMatchingPatterns                ::  Base a => [a] -> [a] -> Bool
 areMatchingPatterns [] []          = True
@@ -68,19 +68,18 @@ areMatchingPatterns [] (y:_)       = False
 areMatchingPatterns (x:xs) (y:ys)  = (x == y) && (areMatchingPatterns xs ys)
 
 
-prefixes                           :: Base a => [a] -> [a] -> Bool
-prefixes [] []                     = True
-prefixes [] (y:_)                  = False
-prefixes (x:_) []                  = True
-prefixes (x:xs) (y:ys)             = (x == y) && (prefixes xs ys)
+isPrefix                           :: Base a => [a] -> [a] -> Bool
+isPrefix [] _                      = True
+isPrefix _ []                      = False
+isPrefix (x:xs) (y:ys)             = (x == y) && (isPrefix xs ys)
 
 occurences                         :: Base a =>  [a] -> [a] -> [Int]
-occurences text pattern            = occsWithPos 0 text pattern
+occurences pattern text            = occsWithPos 0 pattern text
   where
     occsWithPos _ [] []        = []
     occsWithPos _ [] (y:_)     = []
     occsWithPos _ (x:_) []     = []
-    occsWithPos p text pattern = if (prefixes text pattern)
+    occsWithPos p pattern text = if (isPrefix pattern text)
                                  then p : ns
                                  else ns
                                  where ns = occsWithPos (p + 1) (drop 1 text) pattern
@@ -89,14 +88,13 @@ nextOccFrom                         :: Base a => [a] -> Int -> [a] -> Maybe Int
 nextOccFrom  []   _   []            =  Nothing
 nextOccFrom  []   _  (x:_)          =  Nothing
 nextOccFrom (x:_) _   []            =  Nothing
-nextOccFrom text  p pattern         =  if (prefixes text pattern)
+nextOccFrom pattern  p text         =  if (isPrefix pattern text)
                                        then Just p
-                                       else nextOccFrom (drop 1 text) (p + 1) pattern
+                                       else nextOccFrom pattern (p + 1) (drop 1 text)
 
 occurences2                         :: Base a => [a] -> [a] -> [Int]
-occurences2 [] []                   = []
-occurences2 [] (y:_)                = []
-occurences2 (x:_) []                = []
-occurences2 text pattern            = case (nextOccFrom text 0 pattern) of
+occurences2 [] _                    = []
+occurences2 _ []                    = []
+occurences2 pattern text            = case (nextOccFrom pattern 0 text) of
   Nothing -> []
-  Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 (drop (n + 1) text) pattern)
+  Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 pattern (drop (n + 1) text))
