@@ -130,7 +130,3 @@ clumpInts l t xs = filter (\ys -> length ys >= t)
 clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
 clumps l t (Clumer s xs) = map (\ys -> Clumer s (Set.fromList ys))
                                (clumpInts l t (Set.toList xs))
-
-
-
-

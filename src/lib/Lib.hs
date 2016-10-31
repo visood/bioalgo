@@ -72,7 +72,7 @@ execute (Command "pattern-count" argMap) = do
 
 execute (Command "most-frequent-kmers" argMap) = do
   text <- readFile f
-  kcounts <- return $ kmerCounts text k
+  kcounts <- return $ kmerCounts k text 
   putStr (show (sum kcounts))
   putStr (" total ")
   putStr (show k)

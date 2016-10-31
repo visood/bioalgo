@@ -25,20 +25,20 @@ sortGT (a1, b1) (a2, b2)
   | otherwise = LT
 
 frequentKmers                      :: Base a => [a] -> Int -> Map Int [[a]]
-frequentKmers text k               = invertedMap (kmerCounts text k)
+frequentKmers text k               = invertedMap (kmerCounts k text)
 
 invertedMap                        :: (Base a, Ord b) => Map [a] b -> Map b [[a]]
 invertedMap                        = M.foldlWithKey (\m a b ->
                                                       M.insertWith (++) b [a] m
                                                     ) M.empty
 
-kmerCounts                         :: Base a => [a] -> Int -> Map [a] Int
-kmerCounts text k                  = if (length kmer) < k
+kmerCounts                         :: Base a => Int -> [a] -> Map [a] Int
+kmerCounts k text                  = if (length kmer) < k
                                      then M.empty
                                      else M.insertWith (+) kmer 1 kcounts
                                      where
                                        kmer = take k text
-                                       kcounts = kmerCounts (drop 1 text) k
+                                       kcounts = kmerCounts k (drop 1 text)
 
 wordCounts                         :: Base a => [[a]] -> Map [a] Int
 wordCounts words                   = foldl (\m w -> M.insertWith (+) w 1 m) M.empty words
