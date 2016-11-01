@@ -115,18 +115,67 @@ instance Cluster Clumer where
 instance WithBaseSeq Clumer where
   bseq (Clumer s _) = s
 
-addClump :: Int -> [[Int]] -> Int -> [[Int]]
-addClump l xss x = case xss of
+permAddUpto :: Int -> [[Int]] -> Int -> [[Int]]
+permAddUpto l xss x = case xss of
   []     -> [[x]]
   xs:yss -> if (abs (x - (last xs))) <= l
             then (x:xs):rest
-            else rest
+            else xs:rest
             where rest = addClump l yss x
+
+addClump :: Int -> [[Int]] -> Int -> [[Int]]
+addClump _ [] x = [[x]]
+addClump l xss x = case growClump l x xs [] of
+  ([], ys)  -> ys:yss
+  (zs, ys)  -> ys:xs:yss
+  where
+    xs = head xss
+    yss = tail xss
+    growClump :: Int -> Int -> [Int] -> [Int] -> ([Int], [Int])
+    growClump l x us ys = case (us, ys) of
+      (_, [])   -> growClump l x us [x]
+      ([], ws)  -> ([], ws)
+      (w:ws, _) -> if x - w <= l
+                   then growClump l x ws (ys ++ [w])
+                   else (us, ys)
 
 clumpInts :: Int -> Int -> [Int] -> [[Int]]
 clumpInts l t xs = filter (\ys -> length ys >= t)
-                          (foldl (\xss x -> (addClump l xss x) ++ xss) [] xs)
+                          (foldl (\xss x -> addClump l xss x) [] xs)
 
 clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
 clumps l t (Clumer s xs) = map (\ys -> Clumer s (Set.fromList ys))
                                (clumpInts l t (Set.toList xs))
+
+partionClump :: Int -> [Int] -> ([Int], [Int])
+partionClump l ys = growClump l [] ys
+  where
+    growClump :: Int -> [Int] -> [Int] -> ([Int], [Int])
+    -- assuming sorted xs ++ ys
+    growClump l xs ys = case (xs, ys) of
+      (_, [])     -> (xs, [])
+      ([], y:zs)  -> growClump l [y] zs
+      (x:_, y:vs) -> if y - x <= l
+                     then growClump l (xs ++ [y]) vs
+                     else (xs, ys)
+
+
+gatherClumps :: Int -> [Int] -> [[Int]]
+gatherClumps l xs = case partionClump l xs of
+  ([], []) -> []
+  (ys, []) -> [ys]
+  (ys, zs) -> if endsWith (fst ws) ys
+              then ys : (gatherClumps l (snd ws))
+              else ys : (gatherClumps l (drop 1 xs))
+              where ws = partionClump l (drop 1 xs)
+
+endsWith :: [Int] -> [Int] -> Bool
+endsWith ys xs = startsWith (reverse ys) (reverse xs)
+
+startsWith :: [Int] -> [Int] -> Bool
+startsWith ys xs = case (ys, xs) of
+  ([], _)      -> True
+  (_, [])      -> False
+  (y:vs, x:us) -> if (y==x)
+                  then startsWith vs us
+                  else False

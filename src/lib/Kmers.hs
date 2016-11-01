@@ -110,3 +110,9 @@ occurences2 _ []                    = []
 occurences2 pattern text            = case (nextOccFrom pattern 0 text) of
   Nothing -> []
   Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 pattern (drop (n + 1) text))
+
+
+--kmerOccs                           :: Base a => Int -> [a] -> Map [a] [Int]
+kmerClumps :: Base a => Int -> Int -> Int -> [a] -> Map [a] [[Int]]
+kmerClumps k l t text = M.filter (\xs -> not (null xs))
+                                 (M.map (\xs -> Dna.clumpInts l t xs) (kmerOccs k text))
