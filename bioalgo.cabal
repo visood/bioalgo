@@ -42,4 +42,4 @@ test-suite bioalgo-test
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/bioalgo
+  location: https://github.com/visood/bioalgo
