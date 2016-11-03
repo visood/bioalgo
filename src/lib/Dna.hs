@@ -111,6 +111,9 @@ class Cluster a where
   size      :: Base b => (a b) -> Int
   size a    = Set.size (poses a)
 
+  regionCovered    :: Base b => (a b) -> Int
+  regionCovered c  = (maximum (poses c))  - (minimum (poses c)) + 1
+
   merge     :: (Base b, Cluster c) => (c b) -> (a b) -> (a b)
   absorb    :: Base b => Kmer b -> (a b) -> (a b)
 
@@ -118,6 +121,7 @@ data Clumer a where
   Clumer :: Base a => [a] -> Set Int -> Clumer a
 
 deriving instance Show a => Show (Clumer a)
+deriving instance Eq a => Eq (Clumer a)
 
 instance Located Clumer where
   loc   (Clumer _  xs) = Set.findMin xs
