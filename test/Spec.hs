@@ -3,6 +3,7 @@ import Dna
 import Test.QuickCheck
 import Test.HUnit
 import Control.Monad
+import Kmers
 import qualified Data.Set as Set
 
 {- For now the tests are defined here, along with the main.
@@ -24,15 +25,18 @@ main = do
   putStrLn "test that a sequence of Base Int can be faithfully reverse complemented"
   quickCheck (prop_idempotent_revcomp :: [Int] -> Bool)
 
+  putStrLn "-------------------------------------"
   putStrLn "test that Ints are clumped correctly"
   do
     pss <- return $ map prop_intsCanBeClumped intClumpEgs
     putStrLn (concatStrList pss)
+  putStrLn "-------------------------------------"
   do
     pss <- return $ map prop_baseSeqCanBeClumped clumerClumpEgs
     putStrLn (concatStrList pss)
+  putStrLn "-------------------------------------"
   do
-    pss <- return $ map prop_clumpsSatisfyConstraints clumpSizeEgs
+    pss <- return $ map prop_clumpsRegCovIsExpected clumpSizeEgs
     putStrLn (concatStrList pss)
   where
     concatStrList :: [String] -> String
@@ -77,11 +81,8 @@ prop_baseSeqCanBeClumped (x, y) = test ++ (show x) ++ sb ++ (show y) ++ resm
     test = "clumps 3 1 "
 
 
-set :: Ord b => [b] -> Set.Set b
-set xs = Set.fromList xs
-
-prop_clumpsSatisfyConstraints :: (Base b, Show b) => (Clumer b, [Int]) -> String
-prop_clumpsSatisfyConstraints (x, y) = test ++ (show x) ++ sb ++ (show y) ++ resm
+prop_clumpsRegCovIsExpected :: (Base b, Show b) => (Clumer b, [Int]) -> String
+prop_clumpsRegCovIsExpected (x, y) = test ++ (show x) ++ sb ++ (show y) ++ resm
   where
     resm = if res == y
            then " Passed"
@@ -93,3 +94,22 @@ clumpSizeEgs :: [(Clumer Char, [Int])]
 clumpSizeEgs = map (
   \(c, cs) -> (c, map regionCovered cs)
   ) clumerClumpEgs
+
+prop_clumpSatisfiesConstraints :: (Base b, Show b) => Int -> Int -> Int -> Clumer b -> String
+prop_clumpSatisfiesConstraints k l t c = test ++ (show c) ++ sb ++ y ++ resm
+  where
+    resm  = if kpass && lpass && tpass
+            then " Passed"
+            else " Failed: Actual Value " ++ ska ++ ", " ++ sla ++ ", " ++ sta
+    kpass = ka == k
+    lpass = la >= l
+    tpass = ta >= t
+    ska   = show ka
+    sla   = show la
+    sta   = show ta
+    ka    = length (element c)
+    la    = maximum $ map regionCovered cls
+    ta    = minimum $ map size cls
+    cls   = clumps l t c
+    y     = (show k) ++ ", >=" ++ (show l) ++ ", >=" ++ (show t)
+    test  = "clump parameters of "
