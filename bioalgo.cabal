@@ -6,7 +6,7 @@ homepage:            https://github.com/visood/bioalgo#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Vishal Sood
-maintainer:          example@example.com
+maintainer:          vishal.chandra.sood@gmail.com
 copyright:           2016 Vishal Sood
 category:            Bioinformatics
 build-type:          Simple
@@ -16,8 +16,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src/lib
   exposed-modules:     Lib
-                     , Kmers
                      , Dna
+                     , Kmers
   build-depends:       base >= 4.7 && < 5
                      , filepath
                      , containers

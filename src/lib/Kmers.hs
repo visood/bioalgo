@@ -1,3 +1,4 @@
+{-#LANGUAGE GADTs, StandaloneDeriving #-}
 module Kmers where
 
 import Data.Map (Map, (!))
@@ -13,6 +14,136 @@ set xs = Set.fromList xs
 
 --hiddenMessage                      :: Base a =>  [a] -> [a]
 --hiddenMessage text                 = "???"
+
+class Located a where
+  loc       :: Base b => (a b) -> Int
+  dis       :: Base b => Located c => (a b) -> (c b) -> Int
+  dis x y   = abs ((loc x) - (loc y))
+
+data Kmer a where
+  Kmer :: Base a => [a] -> Int -> Kmer a
+
+instance Base a => Eq (Kmer a) where
+  (==) (Kmer s p) (Kmer r q) = s == r && p == q
+
+instance Located Kmer where
+  loc (Kmer _ p) = p
+
+instance WithBaseSeq Kmer where
+  bseq (Kmer s _) = s
+
+-- to use Prelude.length
+instance Foldable Kmer where
+  foldMap f (Kmer s _) = foldMap f s
+
+class Cluster a where
+  element   :: Base b => (a b) -> [b]
+  poses     :: Base b => (a b) -> Set Int
+  leftmost  :: Base b => (a b) -> Int
+  leftmost a = if null xs
+               then invalidPos
+               else Set.findMin xs
+               where xs = poses a
+  rightmost :: Base b => (a b) -> Int
+  rightmost a = if null xs
+                then invalidPos
+                else Set.findMax xs
+                where xs = poses a
+  size      :: Base b => (a b) -> Int
+  size a    = Set.size (poses a)
+
+  regionCovered    :: Base b => (a b) -> Int
+  regionCovered c  = (maximum (poses c))  - (minimum (poses c)) + 1
+
+  merge     :: (Base b, Cluster c) => (c b) -> (a b) -> (a b)
+  absorb    :: Base b => Kmer b -> (a b) -> (a b)
+
+data Clumer a where
+  Clumer :: Base a => [a] -> Set Int -> Clumer a
+
+deriving instance Show a => Show (Clumer a)
+deriving instance Eq a => Eq (Clumer a)
+
+instance Located Clumer where
+  loc   (Clumer _  xs) = Set.findMin xs
+
+instance Cluster Clumer where
+  element (Clumer s  _) = s
+  poses (Clumer _  xs) = xs
+  merge c (Clumer s xs) = if element c == s
+                          then Clumer s (Set.union (poses c) xs)
+                          else Clumer s xs
+  absorb (Kmer s x) (Clumer r ys) = if s == r
+                                    then Clumer r (Set.insert x ys)
+                                    else Clumer r ys
+
+instance WithBaseSeq Clumer where
+  bseq (Clumer s _) = s
+
+permAddUpto :: Int -> [[Int]] -> Int -> [[Int]]
+permAddUpto l xss x = case xss of
+  []     -> [[x]]
+  xs:yss -> if (abs (x - (last xs))) <= l
+            then (x:xs):rest
+            else xs:rest
+            where rest = addClump l yss x
+
+addClump :: Int -> [[Int]] -> Int -> [[Int]]
+addClump _ [] x = [[x]]
+addClump l xss x = case growClump l x xs [] of
+  ([], ys)  -> ys:yss
+  (zs, ys)  -> ys:xs:yss
+  where
+    xs = head xss
+    yss = tail xss
+    growClump :: Int -> Int -> [Int] -> [Int] -> ([Int], [Int])
+    growClump l x us ys = case (us, ys) of
+      (_, [])   -> growClump l x us [x]
+      ([], ws)  -> ([], ws)
+      (w:ws, _) -> if x - w <= l
+                   then growClump l x ws (ys ++ [w])
+                   else (us, ys)
+
+clumpInts :: Int -> Int -> [Int] -> [[Int]]
+clumpInts l t xs = filter (\ys -> length ys >= t)
+                          (foldl (\xss x -> addClump l xss x) [] xs)
+
+clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
+clumps l t (Clumer s xs) = map (\ys -> Clumer s (Set.fromList ys))
+                               (clumpInts l t (Set.toList xs))
+
+partionClump :: Int -> [Int] -> ([Int], [Int])
+partionClump l ys = growClump l [] ys
+  where
+    growClump :: Int -> [Int] -> [Int] -> ([Int], [Int])
+    -- assuming sorted xs ++ ys
+    growClump l xs ys = case (xs, ys) of
+      (_, [])     -> (xs, [])
+      ([], y:zs)  -> growClump l [y] zs
+      (x:_, y:vs) -> if y - x <= l
+                     then growClump l (xs ++ [y]) vs
+                     else (xs, ys)
+
+
+gatherClumps :: Int -> [Int] -> [[Int]]
+gatherClumps l xs = case partionClump l xs of
+  ([], []) -> []
+  (ys, []) -> [ys]
+  (ys, zs) -> if endsWith (fst ws) ys
+              then ys : (gatherClumps l (snd ws))
+              else ys : (gatherClumps l (drop 1 xs))
+              where ws = partionClump l (drop 1 xs)
+
+endsWith :: [Int] -> [Int] -> Bool
+endsWith ys xs = startsWith (reverse ys) (reverse xs)
+
+startsWith :: [Int] -> [Int] -> Bool
+startsWith ys xs = case (ys, xs) of
+  ([], _)      -> True
+  (_, [])      -> False
+  (y:vs, x:us) -> if (y==x)
+                  then startsWith vs us
+                  else False
 
 mostFrequentKmers            :: Base a => Int -> [a] -> (Int, [[a]])
 mostFrequentKmers k text     = (n, m ! n)
@@ -118,7 +249,7 @@ occurences2 pattern text    = case (nextOccFrom pattern 0 text) of
 --kmerOccs                           :: Base a => Int -> [a] -> Map [a] [Int]
 kmerClumps :: Base a => Int -> Int -> Int -> [a] -> Map [a] [[Int]]
 kmerClumps k l t text = M.filter (\xs -> not (null xs))
-                                 (M.map (\xs -> Dna.clumpInts l t xs) (kmerOccs k text))
+                                 (M.map (\xs -> clumpInts l t xs) (kmerOccs k text))
 
 --clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
 --clumers                     :: Base b => Int -> [b] -> Clumer
