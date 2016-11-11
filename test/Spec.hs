@@ -111,5 +111,5 @@ prop_clumpSatisfiesConstraints k l t c = test ++ (show c) ++ sb ++ y ++ resm
     la    = maximum $ map regionCovered cls
     ta    = minimum $ map size cls
     cls   = clumps l t c
-    y     = (show k) ++ ", >=" ++ (show l) ++ ", >=" ++ (show t)
+    y     = "k = "(show k) ++ ", l >= " ++ (show l) ++ ", t >= " ++ (show t)
     test  = "clump parameters of "
