@@ -58,6 +58,14 @@ prop_textKmerSize k text = test ++ sb ++ (show k) ++ "." ++ resm
            then " Passed"
            else " Failed"
 
+prop_textKmerOcc :: (Base b, Show b) => Int -> [b] -> String
+prop_textKmerOcc k text = test ++ sb ++ (show k) ++ "." ++ resm
+  where
+    test = "kmer occurence obtained from \"kmerOccs k text\""
+    resm = if all (\(u, xs) -> (all (\x -> u == take k (drop x text))) xs) (M.toList $ kmerOccs k text)
+           then " Passed"
+           else " Failed"
+
 intClumpEgs :: [([Int], [[Int]])]
 intClumpEgs = [([1,2,3,4,11] , [[11], [4,3,2,1]])
               ,([1,2,3,4,5,12,13,14], [[14,13,12], [5,4,3,2], [4,3,2,1]])
