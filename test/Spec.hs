@@ -1,5 +1,6 @@
 import Dna.Dna
 import Dna.Kmer
+import Test.Util.Util
 import Test.Dna.Dna
 import Test.Dna.Kmer
 import Test.QuickCheck
@@ -42,3 +43,7 @@ main = do
   where
     concatStrList :: [String] -> String
     concatStrList = foldl (\x y -> x ++ "\n" ++ y) []
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4ce7fc5... structure test code under Test module
