@@ -2,7 +2,6 @@ import Dna.Dna
 import Dna.Kmer
 import Test.Dna.Dna
 import Test.Dna.Kmer
-
 import Test.QuickCheck
 import Test.HUnit
 import Control.Monad
