@@ -6,8 +6,8 @@ import System.Exit
 import Data.Char
 import Data.Map (Map, (!))
 import qualified Data.Map as M
-import Lib
-import Kmers
+import Util.Util
+import Dna.Kmer
 
 main :: IO ()
 main = do

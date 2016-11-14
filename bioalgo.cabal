@@ -15,10 +15,10 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src/lib
-  exposed-modules:     Lib
-                     , Dna
-                     , Kmers
-                     , Replication
+  exposed-modules:     Util.Util
+                     , Dna.Dna
+                     , Dna.Kmer
+                     , Dna.Replication
   build-depends:       base >= 4.7 && < 5
                      , filepath
                      , containers
