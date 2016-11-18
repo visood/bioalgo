@@ -3,6 +3,7 @@ module Dna.Dna where
 
 import Data.List (sort)
 import Data.Set (Set)
+import Data.Sequence (Seq)
 {-
 Ix is used to map a contiguous subrange of values in type onto integers.
 It is used primarily for array indexing (see the array package). Ix uses
@@ -103,7 +104,7 @@ instance Show Nucleotide where
                | x == 8    = "T"
                | x == 15   = "N"
                | otherwise = "X"
-    
+
 gap, _A_, _C_, _G_, _T_, _N_ :: Nucleotide
 gap = Nuc 0
 _A_ = Nuc 1
@@ -135,3 +136,4 @@ instance Base Nucleotide where
   symbol (Nuc 15) = 'N'
   symbol x        = 'X'
 
+type DnaSeq = Seq Nucleotide
