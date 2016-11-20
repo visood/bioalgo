@@ -15,13 +15,21 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src/lib
+                       test
   exposed-modules:     Util.Util
                      , Dna.Dna
                      , Dna.Kmer
                      , Dna.Replication
+                     , Test.Examples.Prices
   build-depends:       base >= 4.7 && < 5
                      , filepath
                      , containers
+                     , Chart >= 1.8
+                     , Chart-diagrams
+                     , Chart-cairo
+                     , time
+                     , random
+                     , QuickCheck
   default-language:    Haskell2010
 
 executable bioalgo-tools
@@ -32,6 +40,7 @@ executable bioalgo-tools
                      , bioalgo
                      , containers
   default-language:    Haskell2010
+
 test-suite bioalgo-tests
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test

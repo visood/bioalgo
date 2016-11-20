@@ -1,20 +1,26 @@
+{-#LANGUAGE FlexibleInstances #-}
 module Test.Dna.Kmer where
 import Dna.Kmer
 import Dna.Dna
 import Test.Util.Util
 import Test.Dna.Dna
 import qualified Data.Map as M
+import Test.QuickCheck (Gen, choose, elements, generate, listOf, listOf1)
+import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 
+instance Arbitrary (Clumer Nucleotide) where
+  arbitrary = do
+    ps <- listOf $ choose (0,1000)
+    sq <- listOf1 randNuc
+    return (Clumer sq (set ps))
 
 prop_seqKmerSize :: (Base b, Show b) => Int -> [b] -> Bool
 prop_seqKmerSize k seq = all (\c -> length c == k) (M.keys $ kmerOccs k seq)
 
-prop_clumerInSeq :: (Base b, Show b) => Clumer b -> [b] -> Bool
-prop_clumerInSeq c seq = all (\x -> take k (drop x seq) == cseq) ps
+prop_clumerInSeq :: (Base b, Show b) => Int -> [b] -> Bool
+prop_clumerInSeq k bs = all isat (clumers k bs)
   where
-    k    = length cseq
-    cseq = element c
-    ps   = poses c
+    isat = \c -> all (\x -> take k (drop x bs) == (element c)) (poses c)
 
 
 prop_kmerOccInSeq :: (Base b, Show b) => Int -> [b] -> Bool

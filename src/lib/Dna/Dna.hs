@@ -4,6 +4,11 @@ module Dna.Dna where
 import Data.List (sort)
 import Data.Set (Set)
 import Data.Sequence (Seq)
+import Data.Sequence ((><), (<|), (|>))
+import qualified Data.Foldable as Foldable
+import Test.QuickCheck (Gen, choose, elements, generate, vectorOf)
+import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
+
 {-
 Ix is used to map a contiguous subrange of values in type onto integers.
 It is used primarily for array indexing (see the array package). Ix uses
@@ -88,7 +93,7 @@ isDNA seq = all isBase  seq
 class WithBaseSeq b where
   bseq :: Base a => (b a) -> [a]
 
-newtype Nucleotide = Nuc {nuchar :: Word8} deriving (
+newtype Nucleotide = Nuc {unNuc :: Word8} deriving (
   Eq, Ord, Enum, Ix, Storable
   )
 
@@ -137,3 +142,19 @@ instance Base Nucleotide where
   symbol x        = 'X'
 
 type DnaSeq = Seq Nucleotide
+
+instance Arbitrary Nucleotide where
+  arbitrary = do
+    x <- choose (0, 3) :: Gen Int
+    return (Nuc (2 ^ x))
+
+dnaString :: (Base b) => [b] -> String
+dnaString []     = ""
+dnaString (b:bs) = (symbol b) : (dnaString bs)
+
+randNuc0 = elements [gap, _A_, _C_, _G_, _T_]
+randNuc  = elements [_A_, _C_, _G_, _T_]
+
+randomDna :: Int -> Gen [Nucleotide]
+randomDna k = vectorOf k randNuc
+
