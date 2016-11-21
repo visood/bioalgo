@@ -8,6 +8,10 @@ import Data.Char
 import Dna.Kmer
 import Dna.Dna
 
+
+newtype UInt = UInt Word32
+  deriving (Show)
+
 data Command = Command {utility  :: String,
                         arguments :: Map String String
                        } deriving (Show)

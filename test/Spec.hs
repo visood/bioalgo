@@ -30,15 +30,15 @@ main = do
   putStrLn "-------------------------------------"
   putStrLn "that Ints are clumped correctly"
   do
-    pss <- return $ map prop_intsCanBeClumped intClumpEgs
+    pss <- return $ map egtest_intsClumps intClumpEgs
     putStrLn (concatStrList pss)
   putStrLn "-------------------------------------"
   do
-    pss <- return $ map prop_baseSeqCanBeClumped clumerClumpEgs
+    pss <- return $ map egtest_baseSeqClumps clumerClumpEgs
     putStrLn (concatStrList pss)
   putStrLn "-------------------------------------"
   do
-    pss <- return $ map prop_clumpsRegCovSize clumpSizeEgs
+    pss <- return $ map egtest_clumpsRegCovSize clumpSizeEgs
     putStrLn (concatStrList pss)
   where
     concatStrList :: [String] -> String
