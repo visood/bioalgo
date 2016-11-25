@@ -40,6 +40,18 @@ main = do
   do
     pss <- return $ map egtest_clumpsRegCovSize clumpSizeEgs
     putStrLn (concatStrList pss)
+  do
+    putStrLn ""
+    putStr "test prop_clumpsRegionIsSizeL: "
+  quickCheckWith stdArgs {maxSuccess = 1000} ( 
+    prop_clumpsRegionIsSizeL :: Int -> Int -> Clumer Nucleotide -> Bool
+    )
+  do
+    putStrLn ""
+    putStr "test prop_clumpsSizeMinBound: "
+  quickCheckWith stdArgs {maxSuccess = 1000} ( 
+    prop_clumpsSizeMinBound :: Int -> Int -> Clumer Nucleotide -> Bool
+    )
   where
     concatStrList :: [String] -> String
     concatStrList = foldl (\x y -> x ++ "\n" ++ y) []
