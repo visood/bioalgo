@@ -7,20 +7,12 @@ import qualified Data.Map as M
 import Data.Char
 import Dna.Kmer
 import Dna.Dna
+import Util.Command
 
 
-data Command = Command {utility  :: String,
-                        arguments :: Map String String
-                       } deriving (Show)
-
-astr :: Command -> String
-astr command = foldl (
-  \s xy -> s ++ " -" ++ (fst xy) ++ "=" ++ (snd xy) ++ " "
-  ) (utility command)  (M.toList (arguments command) )
-
+{-
 emptyCommand :: Command
 emptyCommand = Command "empty-command" M.empty
-
 
 
 readCommand :: [String] -> Command
@@ -32,7 +24,6 @@ readCommand (u:args) = if (wordWithAllowedChars u)
 wordWithAllowedChars :: String -> Bool
 wordWithAllowedChars []   = False
 wordWithAllowedChars (x:xs) = (isAlphaNum x) && (all (\c -> (c == '-') || (isAlphaNum c)) xs)
-
 
 readArgs :: [String] -> Map String String
 readArgs = M.fromList . (map readOneArg)
@@ -115,3 +106,4 @@ cltoolsUsage = do
   putStrLn "Available utilities: "
   mapM (\ua -> putStrLn ((fst ua) ++ " " ++ (snd ua))) (M.toList availableCommands)
 
+-}
