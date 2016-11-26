@@ -230,18 +230,18 @@ occurences pattern text     = occsWithPos 0 pattern text
                                  else ns
                                  where ns = occsWithPos (p + 1) pattern (drop 1 text)
 
-nextOccFrom                 :: Base a => [a] -> Int -> [a] -> Maybe Int
-nextOccFrom  []   _   []    =  Nothing
-nextOccFrom  []   _  (x:_)  =  Nothing
-nextOccFrom (x:_) _   []    =  Nothing
-nextOccFrom pattern  p text =  if (isPrefix pattern text)
+nextOccFrom                 :: Base a => Int -> [a] -> [a] -> Maybe Int
+nextOccFrom  _  []    []    =  Nothing
+nextOccFrom  _  []   (x:_)  =  Nothing
+nextOccFrom  _ (x:_)  []    =  Nothing
+nextOccFrom p pattern  text =  if (isPrefix pattern text)
                                then Just p
-                               else nextOccFrom pattern (p + 1) (drop 1 text)
+                               else nextOccFrom (p + 1) pattern  (drop 1 text)
 
 occurences2                 :: Base a => [a] -> [a] -> [Int]
 occurences2 [] _            = []
 occurences2 _ []            = []
-occurences2 pattern text    = case (nextOccFrom pattern 0 text) of
+occurences2 pattern text    = case (nextOccFrom 0 pattern text) of
   Nothing -> []
   Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 pattern (drop (n + 1) text))
 
@@ -254,3 +254,14 @@ kmerClumps k l t text = M.filter (\xs -> not (null xs))
 --clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
 --clumers                     :: Base b => Int -> [b] -> Clumer
 --kmerClumps :: Base b => Int -> Int -> Int -> [b] -> [Clumer b]
+
+
+runningCount :: (Base b, Show b) => [b] -> [b] -> [Int]
+runningCount _ [] = []
+runningCount [] text = take (length text) (repeat 0)
+runningCount pattern text = case (nextOccFrom 0 pattern text) of
+  Nothing -> take (length text) (repeat 0)
+  Just n  -> (take n (repeat 0)) ++ (1:(map incr1 rest))
+    where
+      rest  = runningCount pattern (drop (n + 1) text)
+      incr1 = \c -> c + 1
