@@ -42,8 +42,14 @@ main = do
     putStrLn (concatStrList pss)
   do
     putStrLn ""
+    putStr "test pattern count: "
+  quickCheckWith stdArgs {maxSuccess = 1000} (
+    test_patternCount :: [Nucleotide] -> Bool
+    )
+  do
+    putStrLn ""
     putStr "test prop_clumpsRegionIsSizeL: "
-  quickCheckWith stdArgs {maxSuccess = 1000} ( 
+  quickCheckWith stdArgs {maxSuccess = 1000} (
     prop_clumpsRegionIsSizeL :: Int -> Int -> Clumer Nucleotide -> Bool
     )
   do

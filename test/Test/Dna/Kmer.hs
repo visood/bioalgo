@@ -96,3 +96,8 @@ prop_clumpsSizeMinBound x y c = all (\s -> s >= t) (map size cls)
     cls = clumps l t c
     l   = abs x
     t   = 1 + abs y
+
+test_patternCount ::  [Nucleotide] -> Bool
+test_patternCount p1 = null p1 || patternCount p1 text == 100
+  where
+    text = concat $ take 100 (repeat $ p1 ++ [_N_])
