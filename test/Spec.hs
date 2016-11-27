@@ -42,9 +42,27 @@ main = do
     putStrLn (concatStrList pss)
   do
     putStrLn ""
-    putStr "test pattern count: "
+    putStr "test pattern is repeated: "
+    quickCheckWith stdArgs {maxSuccess = 1000} (
+      test_isRepeated :: Int -> [Nucleotide] -> [Nucleotide] -> Bool
+      )
+  do
+    putStrLn ""
+    putStr "test occurences: "
+  quickCheckWith stdArgs {maxSuccess = 100000} (
+    test_occurences :: [Nucleotide] -> [Int] -> Bool
+    )
+  do
+    putStrLn ""
+    putStr "test ptrn count: "
   quickCheckWith stdArgs {maxSuccess = 1000} (
-    test_patternCount :: [Nucleotide] -> Bool
+    test_ptrnCount :: [Nucleotide] -> Bool
+    )
+  do
+    putStrLn ""
+    putStr "test running ptrn count: "
+  quickCheckWith stdArgs {maxSuccess = 1000} (
+    test_nextOcc :: [Nucleotide] -> Int -> Bool
     )
   do
     putStrLn ""
@@ -55,7 +73,7 @@ main = do
   do
     putStrLn ""
     putStr "test prop_clumpsSizeMinBound: "
-  quickCheckWith stdArgs {maxSuccess = 1000} ( 
+  quickCheckWith stdArgs {maxSuccess = 1000} (
     prop_clumpsSizeMinBound :: Int -> Int -> Clumer Nucleotide -> Bool
     )
   where

@@ -14,7 +14,7 @@ data Command = Command {utility   :: String,
 instance Show Command where
   show (Command name args) = foldl addArg ("command" ++ name) (M.toList args)
     where addArg = \s xy -> s ++ " -" ++ (fst xy) ++ "=" ++ (snd xy)
-      
+
 
 emptyCommand = Command "empty" M.empty
 
@@ -35,14 +35,14 @@ readArgs = M.fromList . (map readOneArg)
     readOneArg s = (tail $ takeWhile (/= '=') s, tail $ dropWhile (/= '=') s)
 
 availableCommands = M.fromList [
-  ("pattern-count", "-f=<file-name> -p=<pattern>"),
+  ("ptrn-count", "-f=<file-name> -p=<ptrn>"),
   ("most-frequent-kmers", "-f=<file-name> -k=<kmer-size> -n=<number>")
   ]
 
 usage u = if M.notMember u availableCommands
           then "Exception: " ++ u ++ " is not a valid command."
           else "Usage: " ++ u ++ " " ++ (availableCommands ! u)
-               
+
 execute :: Command -> IO()
 execute (Command "hello" _) = do
   putStrLn "Hello jee! What may bioalgo tool-kit do for you?"
@@ -50,14 +50,14 @@ execute (Command "hello" _) = do
   putStrLn ""
   putStrLn "!!! BYE for now !!!"
 
-execute (Command "pattern-count" argMap) = do
+execute (Command "ptrn-count" argMap) = do
   text <- readFile (argMap ! "f")
-  pcounts <- return $ patternCount (argMap ! "p") text 
+  pcounts <- return $ ptrnCount (argMap ! "p") text 
   putStr "number of appearances of "
   putStr (argMap ! "p")
   putStr ": "
   putStrLn (show pcounts)
-  
+
 execute (Command "most-frequent-kmers" argMap) = do
   text <- readFile f
   kcounts <- return $ kmerCounts k text

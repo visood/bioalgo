@@ -5,6 +5,8 @@ import Dna.Dna
 import Test.Util.Util
 import Test.Dna.Dna
 import qualified Data.Map as M
+import qualified Data.Set as S
+import qualified Data.List as L
 import Test.QuickCheck (Gen, choose, elements, generate,
                         listOf, listOf1, vectorOf)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
@@ -97,7 +99,41 @@ prop_clumpsSizeMinBound x y c = all (\s -> s >= t) (map size cls)
     l   = abs x
     t   = 1 + abs y
 
-test_patternCount ::  [Nucleotide] -> Bool
-test_patternCount p1 = null p1 || patternCount p1 text == 100
+test_ptrnCount ::  [Nucleotide] -> Bool
+test_ptrnCount p1 = null p1 || ptrnCount p1 text == 100
   where
     text = concat $ take 100 (repeat $ p1 ++ [_N_])
+
+test_nextOcc :: [Nucleotide] -> Int -> Bool
+test_nextOcc [] _ = True
+test_nextOcc ptrn n = case nextOcc ptrn text of
+  Nothing -> False
+  Just m  -> m == an
+  where
+    text = aseq ++ ptrn ++ aseq
+    aseq = (take an (repeat _N_))
+    an   = abs n
+
+test_isRepeated :: (Base b, Show b) => Int -> [b] -> [b] -> Bool
+test_isRepeated n xs ys = r && not nr
+  where
+    r  = isRepeated xs rptseq
+    nr = isRepeated xs (ys ++ (invalidElem:rptseq))
+    rptseq = concat $ take an (repeat xs)
+    an = 1 + abs n
+
+test_occurences :: (Base b, Show b) => [b] -> [Int] -> Bool
+test_occurences [] _ = True
+test_occurences _ [] = True
+test_occurences ptrn xs = occurences2 rptrn (patins rptrn axs) == occs axs
+  where
+    occs :: [Int] -> [Int]
+    occs [] = []
+    occs (x:xs) = x : (map (\y -> y + x + k) (occs xs))
+    patins :: (Base b1, Show b1) => [b1] -> [Int] -> [b1]
+    patins _ [] = []
+    patins [] _ = []
+    patins seq (x:ys) = (take x (repeat (invalidElem))) ++ seq ++ (patins seq ys)
+    axs = map abs xs
+    k = length rptrn
+    rptrn = repeatedPattern ptrn

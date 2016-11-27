@@ -31,6 +31,7 @@ class Ord a => Base a where
   bases       :: [a]
   indexed     :: Int -> a --to use in random generation
   complement  :: a -> a
+  invalidElem :: a
   valid       :: a -> Bool
   valid x     = elem x bases
   symbol      :: a -> Char
@@ -55,6 +56,8 @@ instance Base Char where
     'n' -> 'n'
     _   ->  c
 
+  invalidElem = 'N'
+
   symbol c = c
 
 instance Base Int where
@@ -67,6 +70,7 @@ instance Base Int where
    3 -> 0
    4 -> 4
    _ -> c
+  invalidElem = 4
   symbol c     = case c of
     0 -> 'A'
     1 -> 'C'
@@ -133,6 +137,7 @@ instance Base Nucleotide where
   complement (Nuc 8)  = Nuc 1
   complement (Nuc 15) = Nuc 15
   complement x = x
+  invalidElem = Nuc 15
   symbol (Nuc 0)  = '-'
   symbol (Nuc 1)  = 'A'
   symbol (Nuc 2)  = 'C'
