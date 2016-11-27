@@ -60,8 +60,9 @@ main = do
     )
   do
     putStrLn ""
+<<<<<<< HEAD
     putStr "test next occurence of ptrn: "
-  quickCheckWith stdArgs {maxSuccess = 1000} (
+  quickCheckWith stdArgs {maxSuccess = 100000} (
     test_nextOcc :: [Nucleotide] -> Int -> Bool
     )
   do
