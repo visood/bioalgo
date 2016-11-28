@@ -6,7 +6,7 @@ import System.Exit
 import Data.Char
 import Data.Map (Map, (!))
 import qualified Data.Map as M
-import Util.Util
+import Util.Command
 import Dna.Kmer
 import Dna.Dna
 

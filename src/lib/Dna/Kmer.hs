@@ -202,15 +202,15 @@ allKmers0 k text            = if null text
                               then []
                               else (take k text) : (allKmers0 k (drop 1 text))
 
-patternCount                :: Base a =>  [a] -> [a] -> Int
-patternCount _ []           = 0
-patternCount [] _           = 0
-patternCount pattern text   = if (take l text == pattern)
+ptrnCount                :: Base a =>  [a] -> [a] -> Int
+ptrnCount _ []           = 0
+ptrnCount [] _           = 0
+ptrnCount ptrn text   = if (take l text == ptrn)
                               then 1 + n
                               else n
                               where
-                                l = length pattern
-                                n = patternCount pattern (drop 1 text)
+                                l = length ptrn
+                                n = ptrnCount ptrn (drop 1 text)
 
 
 isPrefix                    :: Base a => [a] -> [a] -> Bool
@@ -219,38 +219,87 @@ isPrefix _ []               = False
 isPrefix (x:xs) (y:ys)      = (x == y) && (isPrefix xs ys)
 
 occurences                  :: Base a =>  [a] -> [a] -> [Int]
-occurences pattern text     = occsWithPos 0 pattern text
+occurences ptrn text     = occsWithPos 0 ptrn text
   where
     occsWithPos :: Base a => Int -> [a] -> [a] -> [Int]
     occsWithPos _ [] []        = []
     occsWithPos _ [] (y:_)     = []
     occsWithPos _ (x:_) []     = []
-    occsWithPos p pattern text = if (isPrefix pattern text)
+    occsWithPos p ptrn text = if (isPrefix ptrn text)
                                  then p : ns
                                  else ns
-                                 where ns = occsWithPos (p + 1) pattern (drop 1 text)
+                                 where ns = occsWithPos (p + 1) ptrn (drop 1 text)
 
-nextOccFrom                 :: Base a => [a] -> Int -> [a] -> Maybe Int
-nextOccFrom  []   _   []    =  Nothing
-nextOccFrom  []   _  (x:_)  =  Nothing
-nextOccFrom (x:_) _   []    =  Nothing
-nextOccFrom pattern  p text =  if (isPrefix pattern text)
+nextOcc :: (Base b, Show b) => [b] -> [b] -> Maybe Int
+nextOcc [] _  = Nothing
+nextOcc  _ [] = Nothing
+nextOcc ptrn text = if (isPrefix ptrn text)
+                       then Just 0
+                       else case nextOcc ptrn (tail text) of
+                              Nothing -> Nothing
+                              Just q  -> Just (q + 1)
+
+nextOccFrom                 :: (Base a, Show a) => Int -> [a] -> [a] -> Maybe Int
+nextOccFrom  _  []    []    =  Nothing
+nextOccFrom  _  []   (x:_)  =  Nothing
+nextOccFrom  _ (x:_)  []    =  Nothing
+nextOccFrom p ptrn  text =  if (isPrefix ptrn text)
                                then Just p
-                               else nextOccFrom pattern (p + 1) (drop 1 text)
+                               else nextOccFrom (p + 1) ptrn  (drop 1 text)
 
-occurences2                 :: Base a => [a] -> [a] -> [Int]
+occurences2                 :: (Base a, Show a) => [a] -> [a] -> [Int]
 occurences2 [] _            = []
 occurences2 _ []            = []
-occurences2 pattern text    = case (nextOccFrom pattern 0 text) of
+occurences2 ptrn text    = case (nextOcc ptrn text) of
   Nothing -> []
-  Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 pattern (drop (n + 1) text))
+  Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 ptrn (drop (n + 1) text))
 
+{-
+occurences2 ptrn text    = case (nextOccFrom 0 ptrn text) of
+  Nothing -> []
+  Just n  -> n : ( map (\p -> (n + 1 + p)) $ occurences2 ptrn (drop (n + 1) text))
+-}
 
 --kmerOccs                           :: Base a => Int -> [a] -> Map [a] [Int]
 kmerClumps :: Base a => Int -> Int -> Int -> [a] -> Map [a] [[Int]]
 kmerClumps k l t text = M.filter (\xs -> not (null xs))
                                  (M.map (\xs -> clumpInts l t xs) (kmerOccs k text))
 
---clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
---clumers                     :: Base b => Int -> [b] -> Clumer
---kmerClumps :: Base b => Int -> Int -> Int -> [b] -> [Clumer b]
+runningCount :: (Base b, Show b) => [b] -> [b] -> [Int]
+runningCount _ [] = []
+runningCount [] text = take (length text) (repeat 0)
+runningCount ptrn text = case (nextOccFrom 0 ptrn text) of
+  Nothing -> take (length text) (repeat 0)
+  Just n  -> (take n (repeat 0)) ++ (1:(map incr1 rest))
+    where
+      rest  = runningCount ptrn (drop (n + 1) text)
+      incr1 = \c -> c + 1
+
+--repeated patterns
+isRepeated :: (Base b, Show b) => [b] -> [b] -> Bool
+isRepeated xs ys
+  | null ys              = null xs
+  | null xs              = False
+  | ly `mod` lx /= 0     = False
+  | not (isPrefix xs ys) = False
+  | ly == lx             = True
+  | otherwise            = isRepeated xs (drop lx ys)
+    where
+      ly     = length ys
+      lx     = length xs
+
+repeatedPattern :: (Base b, Show b) => [b] -> [b]
+repeatedPattern [] = []
+repeatedPattern xs = prefixRepeat 1 xs
+  where
+    prefixRepeat :: (Base b, Show b) => Int -> [b] -> [b]
+    prefixRepeat n xs
+      | 2 * n > lx = xs
+      | null xs = []
+      | length xs < n = xs
+      | otherwise = if isRepeated ys xs
+                    then ys
+                    else prefixRepeat (n + 1) xs
+      where
+        ys = take n xs
+        lx = length xs

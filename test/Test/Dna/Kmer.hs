@@ -5,6 +5,8 @@ import Dna.Dna
 import Test.Util.Util
 import Test.Dna.Dna
 import qualified Data.Map as M
+import qualified Data.Set as S
+import qualified Data.List as L
 import Test.QuickCheck (Gen, choose, elements, generate,
                         listOf, listOf1, vectorOf)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
@@ -37,24 +39,6 @@ prop_kmerOccInSeq :: (Base b, Show b) => Int -> [b] -> Bool
 prop_kmerOccInSeq k seq = all occurence (M.toList $ kmerOccs k seq)
   where
     occurence (cseq, xs) = all (\x -> take k (drop x seq) == cseq) xs
-
-{-
-prop_textKmerSize :: (Base b, Show b) => Int -> [b] -> String
-prop_textKmerSize k text = test ++ sb ++ (show k) ++ "." ++ resm
-  where
-    test = "size of kmers obtained from  \"kmerOccs k text\""
-    resm = if all (\c -> length c == k) (M.keys $ kmerOccs k text)
-           then " Passed"
-           else " Failed"
-
-prop_textKmerOcc :: (Base b, Show b) => Int -> [b] -> String
-prop_textKmerOcc k text = test ++ sb ++ (show k) ++ "." ++ resm
-  where
-    test = "kmer occurence obtained from \"kmerOccs k text\""
-    resm = if all (\(u, xs) -> (all (\x -> u == take k (drop x text))) xs) (M.toList $ kmerOccs k text)
-           then " Passed"
-           else " Failed"
--}
 
 intClumpEgs :: [([Int], [[Int]])]
 intClumpEgs = [([1,2,3,4,11] , [[11], [4,3,2,1]])
@@ -102,38 +86,54 @@ clumpSizeEgs = map (
   ) clumerClumpEgs
 
 prop_clumpsRegionIsSizeL :: (Base b, Show b) => Int -> Int -> Clumer b -> Bool
-prop_clumpsRegionIsSizeL l t c = all (\r -> r <= (abs l) + 1) (map regionCovered cls)
-  where cls = clumps (abs l) (1 + (abs t)) c
-
-prop_clumpsSizeMinBound :: (Base b, Show b) => (Int, Int, Clumer b) -> Bool
-prop_clumpsSizeMinBound (l, t, c) = all (\s -> s >= t) (map size cls)
-  where cls = clumps l t c
-  
- {-
-prop_clumpParams :: (Base b, Show b) => Int -> Int -> Int -> Clumer b -> String
-prop_clumpParams k l t c = test ++ (show c) ++ sb ++ y ++ "." ++ resm
+prop_clumpsRegionIsSizeL x y c = all (\r -> r <= l + 1) (map regionCovered cls)
   where
-    resm  = if kpass && lpass && tpass
-            then " Passed"
-            else " Failed: Actual Value " ++ ska ++ ", " ++ sla ++ ", " ++ sta
-    kpass = ka == k
-    lpass = la >= l
-    tpass = ta >= t
-    ska   = show ka
-    sla   = show la
-    sta   = show ta
-    ka    = length (element c)
-    la    = maximum $ map regionCovered cls
-    ta    = minimum $ map size cls
-    cls   = clumps l t c
-    y     = "k = " ++ (show k) ++ ", l >= " ++ (show l) ++ ", t >= " ++ (show t)
-    test  = "clump parameters of "
+    cls = clumps l t c
+    l   = abs x
+    t   = 1 + abs y
 
-prop_textClumps :: (Base b, Show b) => Int -> Int -> Int -> Clumer b -> String
-prop_textClumps k l t text = test ++ sb ++ y ++ "." ++ resm
-where
- test  = "parameters for clumps in kmers of text"
-  resm  = if kpass && lpass && tpass
-          then " Passed"
-          else " Failed: Actual Value " ++ ska ++ ", " ++ sla ++ ", " ++ sta
--}
+prop_clumpsSizeMinBound :: (Base b, Show b) => Int -> Int -> Clumer b -> Bool
+prop_clumpsSizeMinBound x y c = all (\s -> s >= t) (map size cls)
+  where
+    cls = clumps l t c
+    l   = abs x
+    t   = 1 + abs y
+
+test_ptrnCount ::  [Nucleotide] -> Bool
+test_ptrnCount p1 = null p1 || ptrnCount p1 text == 100
+  where
+    text = concat $ take 100 (repeat $ p1 ++ [_N_])
+
+test_nextOcc :: [Nucleotide] -> Int -> Bool
+test_nextOcc [] _ = True
+test_nextOcc ptrn n = case nextOcc ptrn text of
+  Nothing -> False
+  Just m  -> m == an
+  where
+    text = aseq ++ ptrn ++ aseq
+    aseq = (take an (repeat _N_))
+    an   = abs n
+
+test_isRepeated :: (Base b, Show b) => Int -> [b] -> [b] -> Bool
+test_isRepeated n xs ys = r && not nr
+  where
+    r  = isRepeated xs rptseq
+    nr = isRepeated xs (ys ++ (invalidElem:rptseq))
+    rptseq = concat $ take an (repeat xs)
+    an = 1 + abs n
+
+test_occurences :: (Base b, Show b) => [b] -> [Int] -> Bool
+test_occurences [] _ = True
+test_occurences _ [] = True
+test_occurences ptrn xs = occurences2 rptrn (patins rptrn axs) == occs axs
+  where
+    occs :: [Int] -> [Int]
+    occs [] = []
+    occs (x:xs) = x : (map (\y -> y + x + k) (occs xs))
+    patins :: (Base b1, Show b1) => [b1] -> [Int] -> [b1]
+    patins _ [] = []
+    patins [] _ = []
+    patins seq (x:ys) = (take x (repeat (invalidElem))) ++ seq ++ (patins seq ys)
+    axs = map abs xs
+    k = length rptrn
+    rptrn = repeatedPattern ptrn
