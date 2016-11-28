@@ -43,7 +43,7 @@ main = do
   do
     putStrLn ""
     putStr "test pattern is repeated: "
-    quickCheckWith stdArgs {maxSuccess = 1000} (
+    quickCheckWith stdArgs {maxSuccess = 100000} (
       test_isRepeated :: Int -> [Nucleotide] -> [Nucleotide] -> Bool
       )
   do
@@ -60,7 +60,7 @@ main = do
     )
   do
     putStrLn ""
-    putStr "test running ptrn count: "
+    putStr "test next occurence of ptrn: "
   quickCheckWith stdArgs {maxSuccess = 1000} (
     test_nextOcc :: [Nucleotide] -> Int -> Bool
     )
@@ -79,7 +79,3 @@ main = do
   where
     concatStrList :: [String] -> String
     concatStrList = foldl (\x y -> x ++ "\n" ++ y) []
-<<<<<<< HEAD
-=======
-
->>>>>>> 4ce7fc5... structure test code under Test module

@@ -125,15 +125,23 @@ test_isRepeated n xs ys = r && not nr
 test_occurences :: (Base b, Show b) => [b] -> [Int] -> Bool
 test_occurences [] _ = True
 test_occurences _ [] = True
-test_occurences ptrn xs = occurences2 rptrn (patins rptrn axs) == occs axs
+test_occurences ptrn xs = occurences2 ptrn (patins ptrn axs) == occs axs
   where
-    occs :: [Int] -> [Int]
-    occs [] = []
-    occs (x:xs) = x : (map (\y -> y + x + k) (occs xs))
+    occs []       = []
+    occs (x:[])   = [x]
+    occs (x:0:xs) = if onlyRepeats
+                    then (map (\y -> x + rl * y) $ take nr [0..]) ++
+                         (add (x + k) $ occs (0:xs))
+                    else x : (x + k) : (add (x + 2*k) (occs xs))
+    occs (x:xs)     = x : (add (x + k) (occs xs))
+    add u xs      = map (\x -> x + u) xs
     patins :: (Base b1, Show b1) => [b1] -> [Int] -> [b1]
     patins _ [] = []
     patins [] _ = []
     patins seq (x:ys) = (take x (repeat (invalidElem))) ++ seq ++ (patins seq ys)
     axs = map abs xs
-    k = length rptrn
-    rptrn = repeatedPattern ptrn
+    k = length ptrn
+    lup = length (L.nub ptrn)
+    onlyRepeats = rl < k
+    nr  = k `div` rl
+    rl = length (repeatedPattern ptrn)
