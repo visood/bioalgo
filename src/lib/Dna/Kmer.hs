@@ -267,7 +267,6 @@ kmerClumps k l t text = M.filter (\xs -> not (null xs))
 
 runningCount :: (Base b, Show b) => [b] -> [b] -> [Int]
 runningCount _ [] = []
-runningCount [] text = take (length text) (repeat 0)
 runningCount ptrn text = case (nextOccFrom 0 ptrn text) of
   Nothing -> take (length text) (repeat 0)
   Just n  -> (take n (repeat 0)) ++ (1:(map incr1 rest))
@@ -283,7 +282,6 @@ runningCount0 xs ys = countWithAcc xs 0 ys
     countWithAcc xs c ys = if (isPrefix xs ys)
                            then (c + 1):(countWithAcc xs (c + 1) (tail ys))
                            else c:(countWithAcc xs c (tail ys))
-
 
 --repeated patterns
 isRepeated :: (Base b, Show b) => [b] -> [b] -> Bool
