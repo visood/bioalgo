@@ -275,6 +275,16 @@ runningCount ptrn text = case (nextOccFrom 0 ptrn text) of
       rest  = runningCount ptrn (drop (n + 1) text)
       incr1 = \c -> c + 1
 
+runningCount0 :: (Base b, Show b) => [b] -> [b] -> [Int]
+runningCount0 xs ys = countWithAcc xs 0 ys
+  where
+    countWithAcc :: (Base b, Show b) => [b] -> Int -> [b] -> [Int]
+    countWithAcc _ c []  = [c]
+    countWithAcc xs c ys = if (isPrefix xs ys)
+                           then (c + 1):(countWithAcc xs (c + 1) (tail ys))
+                           else c:(countWithAcc xs c (tail ys))
+
+
 --repeated patterns
 isRepeated :: (Base b, Show b) => [b] -> [b] -> Bool
 isRepeated xs ys
