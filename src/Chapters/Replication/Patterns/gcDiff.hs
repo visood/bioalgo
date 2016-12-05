@@ -20,42 +20,31 @@ count x ys = countWithAcc 0 ys
                             then (c + 1) : (countWithAcc (c + 1) ys)
                             else c : (countWithAcc c ys)
 
-chart text = toRenderable layout
+chart organism text = toRenderable layout
   where
     countsC = count 'C' text
     countsG = count 'G' text
-    diffGC :: [(Int, Int)]
-    diffGC  = zip [0..] [x-y | (x, y) <- (zip countsG countsC)]
-    xysC :: [(Int, Int)]
-    xysC =  zip [0..] countsC
-    xysG :: [(Int, Int)]
-    xysG =  zip [0..] countsG
+    --diffGC :: [(Int, Int)]
+    --diffGC  = zip [0..] [x-y | (x, y) <- (zip countsG countsC)]
+    diffGC :: [Int]
+    diffGC = [x-y | (x, y) <- (zip countsG countsC)]
 
-    plot1  = plot_points_style .~ filledCircles 2 (opaque green)
-      $ plot_points_values .~ xysC
-      $ plot_points_title .~ "C"
+    plot = plot_lines_values .~ [(zip ([0..]::[Int]) diffGC)]
+      $ plot_lines_style . line_color .~ opaque blue
+      $ plot_lines_title .~ "#G - #C"
       $ def
 
-    plot2  = plot_points_style .~ filledCircles 2 (opaque red)
-      $ plot_points_values .~ xysG
-      $ plot_points_title .~ "G"
-      $ def
-
-    plot3  = plot_points_style .~ filledCircles 2 (opaque blue)
-      $ plot_points_values .~ diffGC
-      $ plot_points_title .~ "G - C"
-      $ def
-
-    layout = layout_title .~ "GC counts"
-           $ layout_plots .~ [toPlot plot3]
+    layout = layout_title .~ organism ++ ": Difference in G/C counts."
+           $ layout_plots .~ [toPlot plot]
            $ def
 
 --main1 :: [String] -> IO ()
-main' :: String -> IO (PickFn ())
-main' text = renderableToFile def "gcDiff.png" $ chart text
+main' :: String -> String -> IO (PickFn ())
+main' organism text = renderableToFile def fname $ chart organism text
+  where fname = organism ++ ".gcDiff" ++ ".png"
 
 main = do
   args <- getArgs
   text <- readFile (head args)
   putStrLn ("length of text " ++ (show (length text)))
-  main' text
+  main' (tail $ snd $ break (\c -> c == '/') (head args)) text
