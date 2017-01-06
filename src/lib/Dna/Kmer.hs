@@ -309,18 +309,44 @@ repeatedPattern xs = prefixRepeat 1 xs
         lx = length xs
 
 --approximated by hamming distance
-nextAppxOcc :: (Base b, Show b) => [b] -> Int -> [b] -> Maybe Int
-nextAppxOcc [] _ _ = Nothing
+nextAppxOcc :: (Base b, Show b) => Int -> [b]-> [b] -> Maybe Int
+nextAppxOcc _ [] _ = Nothing
 nextAppxOcc _ _ [] = Nothing
-nextAppxOcc ptrn d text = if (hamdist ptrn (take (length ptrn) text) <= d)
+nextAppxOcc d ptrn text = if (hamdist ptrn (take (length ptrn) text) <= d)
                           then Just 0
-                          else case nextAppxOcc ptrn d (tail text) of
+                          else case nextAppxOcc d ptrn (tail text) of
                                  Nothing -> Nothing
                                  Just q  -> Just (q + 1)
-appxOccs :: (Base a, Show a) => [a] -> Int -> [a] -> [Int]
-appxOccs [] _ _            = []
+appxOccs :: (Base a, Show a) => Int -> [a] -> [a] -> [Int]
+appxOccs _ [] _            = []
 appxOccs _ _ []            = []
-appxOccs ptrn d text       = case (nextAppxOcc ptrn d text) of
+appxOccs d ptrn text       = case (nextAppxOcc d ptrn text) of
   Nothing -> []
-  Just n  -> n : ( map (\p -> (n + 1 + p)) $ appxOccs ptrn d (drop (n + 1) text))
+  Just n  -> n : ( map (\p -> (n + 1 + p)) $ appxOccs d ptrn (drop (n + 1) text))
 
+appxPtrnCount             :: Base a => Int -> [a] -> [a] -> Int
+appxPtrnCount _ _ []      = 0
+appxPtrnCount _ [] _      = 0
+appxPtrnCount d ptrn text = if dist <= d then 1 + n else n
+  where
+    dist = hamdist (take (length ptrn) text) ptrn
+    n    = appxPtrnCount d ptrn (drop 1 text)
+
+mostAppxFreqKmers :: Base b => Int -> Int -> [b] -> (Int, [[b]])
+mostAppxFreqKmers d k text = (n, m ! n)
+  where
+    m = invertedMap (appxKmerCounts d k text)
+    n = (maximum . M.keys) m
+
+appxKmerCounts :: Base b => Int -> Int -> [b] -> Map [b] Int
+appxKmerCounts d k text = foldl
+                          (\m p -> M.insert p (hcount p kcs) m)
+                          M.empty
+                          (M.keys kcs)
+  where
+    kcs = kmerCounts k text
+    hcount p jcs = foldl
+                   (\s q -> if sim q then s + (kcs ! q) else s)
+                   0
+                   (M.keys kcs)
+      where sim q = hamdist p q <= d
