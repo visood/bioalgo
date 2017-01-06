@@ -2,7 +2,7 @@
 	The continuing quest to learn algorithms and data structure used in
 	bioinformatics, and their implementation in Haskell.
 
-	I am stuck with the same ideas, have not been able to break new ground. 
+	I am stuck with the same ideas, have not been able to break new ground.
 
 ** Plotting in Haskell
 	 Plotting is essential in any scientific field. However Haskell is not
@@ -13,5 +13,5 @@
 	 however we will have to think more and the end-result of our efforts will be
 	 preserved in the script. 
 
-*** TODO center the GC diff plot around its minima.
+*** TODO <2017-01-06 Fre> center the GC diff plot around its minima.
 
