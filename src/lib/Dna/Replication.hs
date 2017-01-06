@@ -11,7 +11,7 @@ import Dna.Dna
 
 
 cummsum :: (Foldable t, Num a) => t a -> [a]
-cummsum xs = reverse $ foldl (\cs x -> ((head cs) + x):cs) [0] xs
+cummsum xs = reverse $ snd $ foldl (\(c, cs) x -> (c + x, (c + x):cs)) (0, []) xs
 
 skew :: (Base b, Show b) => b -> b -> [b] -> [Int]
 skew x y text = cummsum $ map skvalue text
@@ -20,3 +20,18 @@ skew x y text = cummsum $ map skvalue text
       | n == x    = 1
       | n == y    = -1
       | otherwise = 0
+
+--find the minimum skew and positions where this minimum is achieved
+--we will need to find the indexes in a list where elem has a given value
+indexesWhere :: (Show a) => (a -> Bool) -> [a] -> [Int]
+indexesWhere pred xs = indexesWhereWithAcc xs 0
+  where
+    indexesWhereWithAcc [] _ = []
+    indexesWhereWithAcc (u:us) n = if pred u then n:nxt else nxt
+      where nxt = indexesWhereWithAcc us (n+1)
+
+minskew :: (Base b, Show b) => b -> b -> [b] -> (Int, [Int])
+minskew x y text = (mskew, indexesWhere (\u -> u == mskew) skewvals)
+  where
+    skewvals = skew x y text
+    mskew    = minimum skewvals
