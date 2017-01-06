@@ -1,0 +1,17 @@
+* Bio-informatic Algorithms
+	The continuing quest to learn algorithms and data structure used in
+	bioinformatics, and their implementation in Haskell.
+
+	I am stuck with the same ideas, have not been able to break new ground. 
+
+** Plotting in Haskell
+	 Plotting is essential in any scientific field. However Haskell is not
+	 particularly helpful in producing interactive plots. We can take this as an
+	 opportunity in  scripting our plots --- this requires learning more about
+	 Haskell charts. Interactive plotting readily becomes hectic hacking away to
+	 get the plot right. We can do the same if we have to script the plot --
+	 however we will have to think more and the end-result of our efforts will be
+	 preserved in the script. 
+
+*** TODO center the GC diff plot around its minima.
+
