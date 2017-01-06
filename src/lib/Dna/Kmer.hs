@@ -327,11 +327,25 @@ appxOccs d ptrn text       = case (nextAppxOcc d ptrn text) of
 appxPtrnCount             :: Base a => Int -> [a] -> [a] -> Int
 appxPtrnCount _ _ []      = 0
 appxPtrnCount _ [] _      = 0
-appxPtrnCount d ptrn text = if dist <= d then 1 + n else n
+appxPtrnCount d ptrn text = if sim ptrn then 1 + n else n
   where
-    dist = hamdist (take (length ptrn) text) ptrn
-    n    = appxPtrnCount d ptrn (drop 1 text)
+    sim ptrn = hamdist (take (length ptrn) text) ptrn <= d
+    n        = appxPtrnCount d ptrn (drop 1 text)
 
+prefixCount :: Base b => ([b] -> Bool) -> [b] -> Int
+prefixCount _ [] = 0
+prefixCount f text = if (f text) then 1 + n else n
+  where n = prefixCount f (tail text)
+
+withinHamDistRevComps :: Base b => Int -> [b] -> [b] -> Bool
+withinHamDistRevComps _ _ []   = False
+withinHamDistRevComps _ [] _   = False
+withinHamDistRevComps d p text = hd <= d || hdrc <= d
+  where
+    hd   = hamdist p t0
+    hdrc = hamdist p (reverseComplement t0)
+    t0 = take (length p) text
+  
 mostAppxFreqKmers :: Base b => Int -> Int -> [b] -> (Int, [[b]])
 mostAppxFreqKmers d k text = (n, m ! n)
   where
@@ -340,13 +354,27 @@ mostAppxFreqKmers d k text = (n, m ! n)
 
 appxKmerCounts :: Base b => Int -> Int -> [b] -> Map [b] Int
 appxKmerCounts d k text = foldl
-                          (\m p -> M.insert p (hcount p kcs) m)
+                          (\m p -> M.insert p (hcount p) m)
                           M.empty
                           (M.keys kcs)
   where
     kcs = kmerCounts k text
-    hcount p jcs = foldl
-                   (\s q -> if sim q then s + (kcs ! q) else s)
-                   0
-                   (M.keys kcs)
+    hcount p = foldl (\s q -> if sim q then s + (kcs ! q) else s) 0 (M.keys kcs)
       where sim q = hamdist p q <= d
+
+appxKmerRevCompCounts :: Base b => Int -> Int -> [b] -> Map [b] Int
+appxKmerRevCompCounts d k text = foldl
+                                 (\m p -> M.insert p (hcount p) m)
+                                 M.empty
+                                 (M.keys kcs)
+  where
+    kcs = kmerCounts k text
+    hcount p = foldl (\s q -> if sim q then s + (kcs ! q) else s) 0 (M.keys kcs)
+      where sim q = hamdist p q <= d || hamdist p (reverseComplement q) <= d
+
+
+mostAppxFreqRevCompKmers :: Base b => Int -> Int -> [b] -> (Int, [[b]])
+mostAppxFreqRevCompKmers d k text = (n, m ! n)
+  where
+    m = invertedMap (appxKmerRevCompCounts d k text)
+    n = (maximum . M.keys) m
