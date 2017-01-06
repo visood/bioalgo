@@ -163,3 +163,9 @@ randNuc  = elements [_A_, _C_, _G_, _T_]
 randomDna :: Int -> Gen [Nucleotide]
 randomDna k = vectorOf k randNuc
 
+hamdist :: (Eq b) => [b] -> [b] -> Int
+hamdist [] [] = 0
+hamdist [] ys = length ys
+hamdist xs [] = length xs
+hamdist (x:xs) (y:ys) = if x == y then rest else 1 + rest
+  where rest = hamdist xs ys

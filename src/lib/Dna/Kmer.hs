@@ -177,15 +177,15 @@ kmerCounts k text            = if (length kmer) < k
     kcounts = kmerCounts k (drop 1 text)
 
 kmerOccs                     :: Base a => Int -> [a] -> Map [a] [Int]
-kmerOccs k text              = kmerOccsWithPos 0 k text
+kmerOccs k text              = kmerOccsFromPos 0 k text
   where
-    kmerOccsWithPos :: Base a => Int -> Int -> [a] -> Map [a] [Int]
-    kmerOccsWithPos p k text = if (length kmer) < k
+    kmerOccsFromPos :: Base a => Int -> Int -> [a] -> Map [a] [Int]
+    kmerOccsFromPos p k text = if (length kmer) < k
                                then M.empty
                                else M.insertWith (++) kmer [p] koccs
       where
         kmer = take k text
-        koccs = kmerOccsWithPos (p + 1) k (drop 1 text)
+        koccs = kmerOccsFromPos (p + 1) k (drop 1 text)
 
 
 clumers                     :: Base b => Int -> [b] -> [Clumer b]
@@ -205,12 +205,10 @@ allKmers0 k text            = if null text
 ptrnCount                :: Base a =>  [a] -> [a] -> Int
 ptrnCount _ []           = 0
 ptrnCount [] _           = 0
-ptrnCount ptrn text   = if (take l text == ptrn)
-                              then 1 + n
-                              else n
-                              where
-                                l = length ptrn
-                                n = ptrnCount ptrn (drop 1 text)
+ptrnCount ptrn text   = if (take l text == ptrn) then 1 + n else n
+  where
+    l = length ptrn
+    n = ptrnCount ptrn (drop 1 text)
 
 
 isPrefix                    :: Base a => [a] -> [a] -> Bool
@@ -219,16 +217,14 @@ isPrefix _ []               = False
 isPrefix (x:xs) (y:ys)      = (x == y) && (isPrefix xs ys)
 
 occurences                  :: Base a =>  [a] -> [a] -> [Int]
-occurences ptrn text     = occsWithPos 0 ptrn text
+occurences ptrn text        = occsFromPos 0 ptrn text
   where
-    occsWithPos :: Base a => Int -> [a] -> [a] -> [Int]
-    occsWithPos _ [] []        = []
-    occsWithPos _ [] (y:_)     = []
-    occsWithPos _ (x:_) []     = []
-    occsWithPos p ptrn text = if (isPrefix ptrn text)
-                                 then p : ns
-                                 else ns
-                                 where ns = occsWithPos (p + 1) ptrn (drop 1 text)
+    occsFromPos :: Base a => Int -> [a] -> [a] -> [Int]
+    occsFromPos _ [] []        = []
+    occsFromPos _ [] (y:_)     = []
+    occsFromPos _ (x:_) []     = []
+    occsFromPos p ptrn text = if (isPrefix ptrn text) then p:ns else ns
+      where ns = occsFromPos (p + 1) ptrn (drop 1 text)
 
 nextOcc :: (Base b, Show b) => [b] -> [b] -> Maybe Int
 nextOcc [] _  = Nothing
@@ -311,3 +307,20 @@ repeatedPattern xs = prefixRepeat 1 xs
       where
         ys = take n xs
         lx = length xs
+
+--approximated by hamming distance
+nextAppxOcc :: (Base b, Show b) => [b] -> Int -> [b] -> Maybe Int
+nextAppxOcc [] _ _ = Nothing
+nextAppxOcc _ _ [] = Nothing
+nextAppxOcc ptrn d text = if (hamdist ptrn (take (length ptrn) text) <= d)
+                          then Just 0
+                          else case nextAppxOcc ptrn d (tail text) of
+                                 Nothing -> Nothing
+                                 Just q  -> Just (q + 1)
+appxOccs :: (Base a, Show a) => [a] -> Int -> [a] -> [Int]
+appxOccs [] _ _            = []
+appxOccs _ _ []            = []
+appxOccs ptrn d text       = case (nextAppxOcc ptrn d text) of
+  Nothing -> []
+  Just n  -> n : ( map (\p -> (n + 1 + p)) $ appxOccs ptrn d (drop (n + 1) text))
+

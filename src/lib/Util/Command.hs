@@ -74,7 +74,7 @@ execute (Command "most-frequent-kmers" argMap) = do
     k = read (argMap ! "k") :: Int
     n = read (argMap ! "n") :: Int
     f = argMap ! "f"
-    
+
 execute (Command "reverse-complement" argMap) = do
   putStrLn (if (isDNA seq) then reverseComplement seq else "Not a DNA sequence")
   where seq = argMap ! "s"
