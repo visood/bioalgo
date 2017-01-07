@@ -7,8 +7,8 @@ import Data.Char
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Util.Command
-import Dna.Kmer
-import Dna.Dna
+import Genome.Dna.Kmer
+import Genome.Dna.Dna
 
 main :: IO ()
 main = do

@@ -1,7 +1,7 @@
-module Test.Dna.Dna where
+module Test.Genome.Dna.Dna where
 
 import Test.Util.Util
-import Dna.Dna
+import Genome.Dna.Dna
 
 prop_idempotent_complement :: Base a => a -> Bool
 prop_idempotent_complement c = complement (complement c) == c

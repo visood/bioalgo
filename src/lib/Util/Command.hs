@@ -5,8 +5,8 @@ import Data.Tuple
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Char
-import Dna.Kmer
-import Dna.Dna
+import Genome.Dna.Kmer
+import Genome.Dna.Dna
 
 data Command = Command {utility   :: String,
                         arguments :: Map String String

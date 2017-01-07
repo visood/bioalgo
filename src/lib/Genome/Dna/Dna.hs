@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, StandaloneDeriving, GeneralizedNewtypeDeriving #-}
-module Dna.Dna where
+module Genome.Dna.Dna where
 
 import Data.List (sort)
 import Data.Set (Set)

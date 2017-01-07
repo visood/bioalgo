@@ -1,9 +1,9 @@
 {-#LANGUAGE FlexibleInstances #-}
-module Test.Dna.Kmer where
-import Dna.Kmer
-import Dna.Dna
+module Test.Genome.Dna.Kmer where
+import Genome.Dna.Kmer
+import Genome.Dna.Dna
 import Test.Util.Util
-import Test.Dna.Dna
+import Test.Genome.Dna.Dna
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List as L

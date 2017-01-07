@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, StandaloneDeriving #-}
-module Dna.Kmer where
+module Genome.Dna.Kmer where
 
 import Data.Map (Map, (!))
 import Data.List (sortBy)
@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Maybe
-import Dna.Dna
+import Genome.Dna.Dna
 
 set :: Ord b => [b] -> Set b
 set xs = Set.fromList xs

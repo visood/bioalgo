@@ -1,8 +1,8 @@
-import Dna.Dna
-import Dna.Kmer
+import Genome.Dna.Dna
+import Genome.Dna.Kmer
 import Test.Util.Util
-import Test.Dna.Dna
-import Test.Dna.Kmer
+import Test.Genome.Dna.Dna
+import Test.Genome.Dna.Kmer
 import Test.QuickCheck
 import Test.HUnit
 import Control.Monad
