@@ -169,3 +169,38 @@ hamdist [] ys = length ys
 hamdist xs [] = length xs
 hamdist (x:xs) (y:ys) = if x == y then rest else 1 + rest
   where rest = hamdist xs ys
+
+
+{-
+To implement frequency arrays, we need a lexical order on types, and there
+lists. Lexicographical order requires that the type be converted into an Int,
+and an Int to the type.
+-}
+class Ord b => Alphabet b where
+  letters     :: [b]
+  
+class (Show b, Alphabet b) => Lexicord b where
+  --cardinality :: Int, does not compile, needs b
+  lexord      :: b -> Int
+  lexval      :: Int -> b
+  listlexord  :: Int -> [b] -> Int
+  listlexord _ [] = 0
+  listlexord k (x:xs) = (lexord x) + k * (listlexord k xs)
+  listlexval  :: Int -> Int -> [b]
+  listlexval _ 0 = []
+  listlexval k x = (lexval $ mod x k) : (listlexval k (div x k))
+
+instance Alphabet Char where
+  letters = ['A', 'B', 'C', 'T']
+
+instance Lexicord Char where
+  lexord 'A' = 0
+  lexord 'C' = 1
+  lexord 'G' = 2
+  lexord 'T' = 3
+  lexord  _  = -1
+  lexval  0  = 'A'
+  lexval  1  = 'C'
+  lexval  2  = 'G'
+  lexval  3  = 'T'
+  lexval  _  = 'N'

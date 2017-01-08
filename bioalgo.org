@@ -15,3 +15,15 @@
 
 *** TODO <2017-01-06 Fre> center the GC diff plot around its minima.
 
+** Faster pattern finding
+   While we have used dictionaries (Haskell Map) to implement pattern finding 
+   algorithms, Compeau and Pevzner suggest using Frequency Arrays. 
+   Frequency Arrays work with mapping the four (can be five if 'N' is allowed)
+   nucleotides to numbers, and using a positional factor to convert strings of
+   nucleotides to numbers. For a pattern of length $k$, there are $4^k$ possible
+   strings, and hence the numbers will range from $0$ to $4^k - 1$. This number
+   will be prohibitively large even for moderate values of $k$. However for the
+   problem of locating the origin of replication, $k$ is typically smaller
+   than 10, and the frequency array will be of the order of a million. We can
+   implement the same pattern search algorithms using the frequency array under
+   their own module.
