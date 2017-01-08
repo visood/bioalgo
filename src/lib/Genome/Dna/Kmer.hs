@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Maybe
+import Util.Util (invertedMap)
 import Genome.Dna.Dna
 
 set :: Ord b => [b] -> Set b
@@ -163,10 +164,12 @@ sortGT (a1, b1) (a2, b2)
 frequentKmers                :: Base a => Int -> [a] -> Map Int [[a]]
 frequentKmers k text         = invertedMap (kmerCounts k text)
 
-invertedMap                  :: (Base a, Ord b) => Map [a] b -> Map b [[a]]
+{-
+invertedMap                  :: (Show a, Ord b) => Map [a] b -> Map b [[a]]
 invertedMap                  = M.foldlWithKey (\m a b ->
                                                 M.insertWith (++) b [a] m
                                               ) M.empty
+-}
 
 kmerCounts                   :: Base a => Int -> [a] -> Map [a] Int
 kmerCounts k text            = if (length kmer) < k
