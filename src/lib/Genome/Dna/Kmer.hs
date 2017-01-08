@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Maybe
-import Util.Util (invertedMap, hamdist)
+import Util.Util (invertedMap, hamdis)
 import Genome.Dna.Dna
 
 set :: Ord b => [b] -> Set b

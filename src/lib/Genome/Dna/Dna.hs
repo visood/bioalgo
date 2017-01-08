@@ -8,7 +8,7 @@ import Data.Sequence ((><), (<|), (|>))
 import qualified Data.Foldable as Foldable
 import Test.QuickCheck (Gen, choose, elements, generate, vectorOf)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
-import Util.Util (hamdist)
+import Util.Util (hamdist
 import Genome.Data.FrequencyArray (Lexicord, lexord, lexval, listlexord, listlexval)
 
 {-

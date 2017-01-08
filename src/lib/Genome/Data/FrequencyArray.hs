@@ -8,7 +8,7 @@ import Data.Sequence ((><), (<|), (|>))
 import qualified Data.Foldable as Foldable
 import Data.Map (Map, (!))
 import qualified Data.Map as M
-import Util.Util (invertedMap)
+import Util.Util (invertedMap, hamdist)
 {-
 To implement frequency arrays, we need a lexical order on types, and there
 lists. Lexicographical order requires that the type be converted into an Int,
@@ -38,8 +38,32 @@ freqKmerLexicords c k text = invertedMap (kmerLexicordCounts c k text)
 
 kmerLexicordCounts :: Lexicord b => Int -> Int -> [b] -> Map Int Int
 kmerLexicordCounts c k text = if (length kmer) < k
-                         then M.empty
-                         else M.insertWith (+) (listlexord c kmer) 1 kcounts
+                              then M.empty
+                              else M.insertWith (+) (listlexord c kmer) 1 kcounts
   where
     kmer = take k text
     kcounts = kmerLexicordCounts c k (drop 1 text)
+
+
+type Simpred b = [b] -> [b] -> Bool
+
+mostAppxFreqKmers :: Lexicord b => Int -> Simpred b -> Int -> [b] -> (Int, [[b]])
+mostAppxFreqKmers c areSimilar k text = (n, map (listlexval c) (m ! n))
+  where
+    m = invertedMap (appxKmerLexicordCounts c areSimilar k text)
+    n = (maximum . M.keys) m
+
+appxKmerLexicordCounts :: Lexicord b => Int -> Simpred b -> Int -> [b] -> Map Int Int
+appxKmerLexicordCounts c areSimilar k text = foldl
+                                             (\m p -> M.insert p (hcount p) m)
+                                             M.empty
+                                             (M.keys kcs)
+  where
+    kcs = kmerLexicordCounts c k text
+    hcount p = foldl
+               (\s q ->
+                  if areSimilar (listlexval c p) (listlexval c q)
+                  then s + (kcs ! q)
+                  else s)
+               0
+               (M.keys kcs)
