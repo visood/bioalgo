@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Maybe
-import Util.Util (invertedMap)
+import Util.Util (invertedMap, hamdist)
 import Genome.Dna.Dna
 
 set :: Ord b => [b] -> Set b
@@ -348,7 +348,7 @@ withinHamDistRevComps d p text = hd <= d || hdrc <= d
     hd   = hamdist p t0
     hdrc = hamdist p (reverseComplement t0)
     t0 = take (length p) text
-  
+
 mostAppxFreqKmers :: Base b => Int -> Int -> [b] -> (Int, [[b]])
 mostAppxFreqKmers d k text = (n, m ! n)
   where

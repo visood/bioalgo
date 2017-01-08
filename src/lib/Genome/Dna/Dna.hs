@@ -8,6 +8,7 @@ import Data.Sequence ((><), (<|), (|>))
 import qualified Data.Foldable as Foldable
 import Test.QuickCheck (Gen, choose, elements, generate, vectorOf)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
+import Util.Util (hamdist)
 import Genome.Data.FrequencyArray (Lexicord, lexord, lexval, listlexord, listlexval)
 
 {-
@@ -163,13 +164,6 @@ randNuc  = elements [_A_, _C_, _G_, _T_]
 
 randomDna :: Int -> Gen [Nucleotide]
 randomDna k = vectorOf k randNuc
-
-hamdist :: (Eq b) => [b] -> [b] -> Int
-hamdist [] [] = 0
-hamdist [] ys = length ys
-hamdist xs [] = length xs
-hamdist (x:xs) (y:ys) = if x == y then rest else 1 + rest
-  where rest = hamdist xs ys
 
 --for frequency arrays
 instance Lexicord Char where
