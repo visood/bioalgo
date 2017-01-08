@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src/lib
                        test
   exposed-modules:     Util.Command
+                     , Util.Util
                      , Genome.Dna.Dna
                      , Genome.Dna.Kmer
                      , Genome.Dna.Replication
