@@ -20,6 +20,7 @@ library
                      , Genome.Dna.Dna
                      , Genome.Dna.Kmer
                      , Genome.Dna.Replication
+                     , Genome.Data.FrequencyArray
                      , Test.Examples.Prices
   build-depends:       base >= 4.7 && < 5
                      , filepath
@@ -43,6 +44,9 @@ executable bioalgo-tools
 
 test-suite bioalgo-tests
   type:                exitcode-stdio-1.0
+  other-modules:       Test.Genome.Dna.Dna
+                     , Test.Genome.Dna.Kmer
+                     , Test.Util.Util
   hs-source-dirs:      test
                      , test/lib
   main-is:             Spec.hs
