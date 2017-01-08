@@ -8,6 +8,7 @@ import Data.Sequence ((><), (<|), (|>))
 import qualified Data.Foldable as Foldable
 import Test.QuickCheck (Gen, choose, elements, generate, vectorOf)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
+import Genome.Data.FrequencyArray (Lexicord, lexord, lexval, listlexord, listlexval)
 
 {-
 Ix is used to map a contiguous subrange of values in type onto integers.
@@ -170,27 +171,10 @@ hamdist xs [] = length xs
 hamdist (x:xs) (y:ys) = if x == y then rest else 1 + rest
   where rest = hamdist xs ys
 
-
-{-
-To implement frequency arrays, we need a lexical order on types, and there
-lists. Lexicographical order requires that the type be converted into an Int,
-and an Int to the type.
--}
-class Show b => Lexicord b where
-  --cardinality :: Int, does not compile, needs b
-  lexord      :: b -> Int
-  lexval      :: Int -> b
-  listlexord  :: Int -> [b] -> Int
-  listlexord _ [] = 0
-  listlexord k (x:xs) = 1 + (lexord x) + k * (listlexord k xs)
-  listlexval  :: Int -> Int -> [b]
-  listlexval _ 0 = []
-  listlexval k x = (lexval $ mod rx k) : (listlexval k (div rx k))
-    where rx = x - 1
-
+--for frequency arrays
 instance Lexicord Char where
   lexord 'A' = 0
-  lexord 'C' = 1
+  lexord 'C' =1
   lexord 'G' = 2
   lexord 'T' = 3
   lexord  _  = -1
@@ -199,3 +183,15 @@ instance Lexicord Char where
   lexval  2  = 'G'
   lexval  3  = 'T'
   lexval  _  = 'N'
+
+instance Lexicord Nucleotide where
+  lexord (Nuc 1) = 0
+  lexord (Nuc 2) = 1
+  lexord (Nuc 4) = 2
+  lexord (Nuc 8) = 3
+  lexord  _  = -1
+  lexval  0  = _A_
+  lexval  1  = _C_
+  lexval  2  = _G_
+  lexval  3  = _T_
+  lexval  _  = _N_
