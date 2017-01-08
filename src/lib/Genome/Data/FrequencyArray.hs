@@ -27,13 +27,19 @@ class Show b => Lexicord b where
     where rx = x - 1
 
 
-frequentPatterns :: Lexicord b => Int -> Int -> [b] -> Map Int [Int]
-frequentPatterns c k text = invertedMap (patternCounts c k text)
+mostFrequentKmers :: Lexicord b => Int -> Int -> [b] -> (Int, [[b]])
+mostFrequentKmers c k text = (n, map (listlexval c)  (m ! n))
+  where
+    m = freqKmerLexicords c k text
+    n = (maximum . M.keys) m    
 
-patternCounts :: Lexicord b => Int -> Int -> [b] -> Map Int Int
-patternCounts c k text = if (length kmer) < k
+freqKmerLexicords :: Lexicord b => Int -> Int -> [b] -> Map Int [Int]
+freqKmerLexicords c k text = invertedMap (kmerLexicordCounts c k text)
+
+kmerLexicordCounts :: Lexicord b => Int -> Int -> [b] -> Map Int Int
+kmerLexicordCounts c k text = if (length kmer) < k
                          then M.empty
                          else M.insertWith (+) (listlexord c kmer) 1 kcounts
   where
     kmer = take k text
-    kcounts = patternCounts c k (drop 1 text)
+    kcounts = kmerLexicordCounts c k (drop 1 text)
