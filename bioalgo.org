@@ -76,3 +76,46 @@ I am stuck with the same ideas, have not been able to break new ground.
    than 10, and the frequency array will be of the order of a million. We can
    implement the same pattern search algorithms using the frequency array under
    their own module.
+*** Lexicographical order
+    We have successfully implemented lexicographical ordering using a
+    type-class. To use this type class we defined an instance for Chars.
+    To compute approximately similar patterns, we need to compute similarity
+    using hamming distance. While we can do this using raw function, and passing
+    them around, the hamming distance is compute in the context of a problem. We
+    can abstract the idea of similarity and define pattern searching algorithms
+    in terms of a type class Simable that defines the required functions that
+    tell us if two patterns are similar, and another that gives us all patterns
+    similar to a given one. When used, we have to implement the type class
+    instance for a Char, or Nucleotide. 
+    A straightforward implementation will define similarity as the hamming
+    distance below a given value. We can also accommodate similarity to
+    reverse-complements of a pattern as well. A simple implementation will
+    require us to pass around the distance parameter $delta$. For
+    lexicographical order we started to play with a data type that requires the
+    cardinality, order on elems, and values from integers. Instead of passing
+    around the cardinality as an integer and implementing instances of a
+    lexographical order type class, the data type lexographical order is passed
+    to functions that convert a list to an int and back. A similar approach can
+    be taken for similarity. 
+    
+**** TODO Similarity from lexicographical order of strings
+     <2017-01-09 Mon>
+     Similarity between two strings can be straightforwardly defined in terms of
+     hamming distance. What do we do when we are dealing with lexicographical
+     order of strings? We can convert to strings to compute the similarity, or
+     derive an arithmetic formula. That part is easy. The hard part is to make
+     our code generic. We want to write one method parameterized by a type for
+     which we can compute similarities. This requires that we define an instance
+     of similarity for an Int.
+     As a starter, focus on defining the concepts of similarity and hamming
+     distance for sequences of elements that form an alphabet. This concept is
+     clean and useful. Do not entangle lexicographical ordering with these
+     concepts -- implement them quick and dirty using straightforward functions.
+     Keep using the abstraction of Lexicord that worked, or try the data type --
+     both are fine.
+**** TODO Lexicographically represented strings
+     <2017-01-09 Mon>
+     A more ambitious approach is to define a new data type, $Lexstring b$ that
+     represents a sequence of some type b for lexicographical order can be
+     defined. If we then define head, tail, and : operations for $Lexstring b$
+     we will be able to generalize similarity code written for simple sequences.
