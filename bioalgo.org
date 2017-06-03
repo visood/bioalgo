@@ -2,7 +2,56 @@
 	The continuing quest to learn algorithms and data structure used in
 	bioinformatics, and their implementation in Haskell.
 
-	I am stuck with the same ideas, have not been able to break new ground.
+** Haskell Stack : How to build a project with Stack
+   =Stack is a cross-platform program for developing Haskell projects. It is=
+   =aimed at Haskellers both new and experienced.=
+   Stack can be used to :
+   - Install GHC automatically, in an isolated location.
+   - Install packages needed for your project.
+   - Build your project.
+   - Test your project.
+   - Benchmark your project.
+*** Start your new project :
+    Create a new directory containing all the needed files to start a project,
+    #+BEGIN_EXAMPLE
+    stack new my-project 
+    cd my-project
+    #+END_EXAMPLE
+
+    Download the compiler if needed, in an isolated location (defaults to
+    ~`~/.stack`~). The isolated location will not interfere with any
+    system-level installation. Use ~stack path~ for information on installation
+    paths. 
+
+    To build a minimal project :
+    : stack build
+    
+    To execute :
+    : stack exec my-project-exe
+
+    To install an executable use stack, 
+    : stack install <package-name>
+
+    To launch a REPL :
+    : stack ghci
+
+*** Project Structure
+    The project has the following directory structure:
+    - ~data~ to hold the (test) data
+    - ~src~  to hold the source code
+    - ~test~ to hold the test code
+    - ~app~  to hold Main
+
+    Under ~src~ we have a ~lib~ to hold the library :
+    - ~Util~     to hold general utilities, for example ~Command.hs~ used for CLI.
+    - ~Genome~   to hold genomic functionality
+    - ~Examples~ to hold examples
+    - ~Chapters~ to hold chapter by chapter code examples
+      
+    ~Test~ code has (almost) identical directory lay-out.
+    
+
+I am stuck with the same ideas, have not been able to break new ground.
 
 ** Plotting in Haskell
 	 Plotting is essential in any scientific field. However Haskell is not
