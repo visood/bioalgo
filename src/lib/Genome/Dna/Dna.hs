@@ -9,11 +9,14 @@ import qualified Data.Foldable as Foldable
 import Test.QuickCheck (Gen, choose, elements, generate, vectorOf)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import Util.Util (hamdist)
+import qualified Genome.Data.Lexicographical as Lexico
+ {-
 import Genome.Data.FrequencyArray (Lexicord,
                                    lexord,
                                    lexval,
                                    listlexord,
                                    listlexval)
+-}
 
 {-
 Ix is used to map a contiguous sub-range of values in type onto integers.
@@ -36,6 +39,7 @@ invalidPos = -1
 class Ord a => Base a where
   bases         :: [a]
   indexed       :: Int -> a --to use in random generation
+  baseIndex     :: a -> Int
   complement    :: a -> a
   invalidBase   :: a
   isValidBase   :: a -> Bool
@@ -43,12 +47,19 @@ class Ord a => Base a where
   symbol        :: a -> Char
 
 instance Base Char where
-  bases        = ['A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't']
+  bases        = ['A', 'C', 'G', 'T']
   indexed 0    = 'A'
   indexed 1    = 'C'
   indexed 2    = 'G'
   indexed 3    = 'T'
   indexed _    = 'N'
+
+  baseIndex 'A'    = 0
+  baseIndex 'C'    = 1
+  baseIndex 'G'    = 2
+  baseIndex 'T'    = 3
+  baseIndex  _     = 4
+
   complement c = case c of
     'A' -> 'T'
     'a' -> 't'
@@ -67,8 +78,9 @@ instance Base Char where
   symbol c = c
 
 instance Base Int where
-  bases        = [0, 1, 2, 3, 4]
+  bases        = [0, 1, 2, 3]
   indexed i    = if (i < 0) then 4 else min i 4
+  baseIndex i      = min i 4
   complement c = case c of
    0 -> 3
    1 -> 2
@@ -128,13 +140,19 @@ _T_ = Nuc 8
 _N_ = Nuc 15
 
 instance Base Nucleotide where
-  bases = [_A_, _C_, _G_, _T_, _N_]
-  indexed 0 = gap
-  indexed 1 = _A_
-  indexed 2 = _C_
-  indexed 3 = _G_
-  indexed 4 = _T_
+  bases = [_A_, _C_, _G_, _T_]
+  indexed 0 = _A_
+  indexed 1 = _C_
+  indexed 2 = _G_
+  indexed 3 = _T_
   indexed _ = _N_
+
+  baseIndex (Nuc 1) = 0
+  baseIndex (Nuc 2) = 1
+  baseIndex (Nuc 4) = 2
+  baseIndex (Nuc 8) = 3
+  baseIndex  _  = 4
+
   complement (Nuc 0)  = Nuc 0
   complement (Nuc 1)  = Nuc 8
   complement (Nuc 2)  = Nuc 4
@@ -142,7 +160,9 @@ instance Base Nucleotide where
   complement (Nuc 8)  = Nuc 1
   complement (Nuc 15) = Nuc 15
   complement x = x
+
   invalidBase = Nuc 15
+
   symbol (Nuc 0)  = '-'
   symbol (Nuc 1)  = 'A'
   symbol (Nuc 2)  = 'C'
@@ -168,27 +188,38 @@ randNuc  = elements [_A_, _C_, _G_, _T_]
 randomDna :: Int -> Gen [Nucleotide]
 randomDna k = vectorOf k randNuc
 
---for frequency arrays
-instance Lexicord Char where
-  lexord 'A' = 0
-  lexord 'C' =1
-  lexord 'G' = 2
-  lexord 'T' = 3
-  lexord  _  = -1
-  lexval  0  = 'A'
-  lexval  1  = 'C'
-  lexval  2  = 'G'
-  lexval  3  = 'T'
-  lexval  _  = 'N'
+charBaseLexOrd = Lexico.Order k bo bv
+  where
+    k = 4
+    bv 0 = 'A'
+    bv 1 = 'C'
+    bv 2 = 'G'
+    bv 3 = 'T'
+    bv _ = 'N'
 
-instance Lexicord Nucleotide where
-  lexord (Nuc 1) = 0
-  lexord (Nuc 2) = 1
-  lexord (Nuc 4) = 2
-  lexord (Nuc 8) = 3
-  lexord  _  = -1
-  lexval  0  = _A_
-  lexval  1  = _C_
-  lexval  2  = _G_
-  lexval  3  = _T_
-  lexval  _  = _N_
+    bo 'A' = 0
+    bo 'C' = 1
+    bo 'G' = 2
+    bo 'T' = 3
+    bo  _  = 4
+            
+
+
+newtype AsBase b = AsBase b deriving Show
+
+instance (Base b) => Lexico.LexOrd (AsBase b)  where
+    lexvalue i = AsBase (indexed i)
+    lexorder (AsBase x) = baseIndex x
+
+--numberBases :: Base b => Int
+--numberBases = length (bases::[b])
+
+baseLexicOrder :: Base b => Lexico.Order b
+baseLexicOrder = Lexico.Order 4 baseIndex indexed
+
+charBaseLexicOrder = baseLexicOrder :: Lexico.Order Char
+intBaseLexicOrder  = baseLexicOrder :: Lexico.Order Int
+nucBaseLexicOrder  = baseLexicOrder :: Lexico.Order Nucleotide
+
+--baseLexicOrder :: Base b => Lexico.Order (AsBase b)
+--baseLexicOrder = Lexico.lexicord 4

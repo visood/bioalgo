@@ -22,7 +22,7 @@ library
                      , Genome.Dna.Kmer
                      , Genome.Dna.Replication
                      , Genome.Data.FrequencyArray
-                     , Genome.Data.Lexicog
+                     , Genome.Data.Lexicographical
                      , Test.Examples.Prices
   build-depends:       base >= 4.7 && < 5
                      , filepath
