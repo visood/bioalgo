@@ -19,7 +19,15 @@ dispatch        :: [String] -> IO ()
 dispatch ["-h"] = cltoolsUsage >> exit
 dispatch ["-v"] = version >> exit
 dispatch (u:("-h"):_) = putStrLn (usage u) >> exit
-dispatch args   = execute (readCommand args)
+dispatch args = case command of
+  Command "illegal" _ -> throwIllegalUtilityName
+  Command "empty"   _ -> throwUnspecifiedUtility
+  _                   -> if not(isAvailable command)
+                         then throwUnavailableUtility
+                         else if checkCommand command
+                              then execute command
+                              else throwIncompleteCommand command
+  where command = readCommand args
 
 
 

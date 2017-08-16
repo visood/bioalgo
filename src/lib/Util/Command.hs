@@ -9,8 +9,8 @@ import Genome.Dna.Kmer
 import Genome.Dna.Dna
 
 data Command = Command {utility   :: String,
-                        arguments :: Map String String
-                       }
+                        arguments :: Map String String}
+
 instance Show Command where
   show (Command name args) = foldl addArg ("command" ++ name) (M.toList args)
     where addArg = \s xy -> s ++ " -" ++ (fst xy) ++ "=" ++ (snd xy)
@@ -26,7 +26,7 @@ readCommand (u:args)  = if (allowedWord u)
   where
     allowedWord :: String -> Bool
     allowedWord [] = False
-    allowedWord (x:xs) = (isAlphaNum x) && all allowedChar xs
+    allowedWord (x:xs) = (isAlpha x) && all allowedChar xs
     allowedChar = \c -> (c == '-') || (isAlphaNum c)
 
 readArgs :: [String] -> Map String String
@@ -34,14 +34,60 @@ readArgs = M.fromList . (map readOneArg)
   where
     readOneArg s = (tail $ takeWhile (/= '=') s, tail $ dropWhile (/= '=') s)
 
+availableCommands :: Map String [String]
 availableCommands = M.fromList [
-  ("ptrn-count", "-f=<file-name> -p=<ptrn>"),
-  ("most-frequent-kmers", "-f=<file-name> -k=<kmer-size> -n=<number>")
+  ("pattern-count", ["-f=<file-name>",
+                     "-p=<ptrn>"]),
+  ("most-frequent-kmers", ["-f=<file-name>",
+                           "-k=<kmer-size>",
+                           "-n=<rank>"]),
+  ("reverse-complement", ["-f=<file-name>"]),
+  ("occurences", ["-s=<pattern>",
+                  "-f=<file-name>"]),
+  ("clumps", ["-k=<kmer-length>",
+              "-l=<window-length>",
+              "-t=<number-clusters>",
+              "-f=<genome-file-name",
+              "-o=<output-count-or-patterns>"])
   ]
 
-usage u = if M.notMember u availableCommands
-          then "Exception: " ++ u ++ " is not a valid command."
-          else "Usage: " ++ u ++ " " ++ (availableCommands ! u)
+
+
+isAvailable :: Command -> Bool
+isAvailable (Command command _) = M.member command availableCommands
+
+checkCommand :: Command -> Bool
+checkCommand (Command command argMap) = if M.member command availableCommands
+                                        then all checkField requiredArgs
+                                        else False
+  where
+    requiredArgs = M.toList (readArgs (availableCommands ! command))
+    checkField   = \field -> M.member (fst field) argMap
+
+
+throwIllegalUtilityName :: IO()
+throwIllegalUtilityName = do
+  putStrLn "Illegal utility name"
+  putStrLn "--------------------------"
+  cltoolsUsage >> exitWith ExitSuccess
+
+throwUnspecifiedUtility :: IO()
+throwUnspecifiedUtility = do
+  putStrLn "Unspecified utility name."
+  putStrLn "--------------------------"
+  cltoolsUsage >> exitWith ExitSuccess
+
+throwUnavailableUtility :: IO()
+throwUnavailableUtility = do
+  putStrLn "Specified utility is not available."
+  putStrLn "--------------------------"
+  cltoolsUsage >> exitWith ExitSuccess
+  
+throwIncompleteCommand :: Command -> IO()
+throwIncompleteCommand (Command command argMap) = do
+  putStrLn "Provide all the required arguments."
+  putStrLn "--------------------------"
+  putStrLn (usage command)
 
 execute :: Command -> IO()
 execute (Command "hello" _) = do
@@ -50,9 +96,9 @@ execute (Command "hello" _) = do
   putStrLn ""
   putStrLn "!!! BYE for now !!!"
 
-execute (Command "ptrn-count" argMap) = do
+execute (Command "pattern-count" argMap) = do
   text <- readFile (argMap ! "f")
-  pcounts <- return $ ptrnCount (argMap ! "p") text 
+  pcounts <- return $ patternCount (argMap ! "p") text 
   putStr "number of appearances of "
   putStr (argMap ! "p")
   putStr ": "
@@ -76,9 +122,41 @@ execute (Command "most-frequent-kmers" argMap) = do
     f = argMap ! "f"
 
 execute (Command "reverse-complement" argMap) = do
+  text <- readFile filename
+  let seq = head $ lines text -- assuming only single line file
   putStrLn (if (isDNA seq) then reverseComplement seq else "Not a DNA sequence")
-  where seq = argMap ! "s"
+  where
+    filename = argMap ! "f"
 
+execute (Command "occurences" argMap) = do
+  textn <- readFile filename
+  let text = head $ lines textn -- assuming only single line file
+  mapM_ (\c -> putStr ((show c) ++ " ")) (occurences seq text)
+  putStrLn ""
+  where
+    filename = argMap ! "f"
+    seq      = argMap ! "s"
+
+execute (Command "clumps" argMap) = do
+  textn <- readFile f
+  let text          = head $ lines textn -- assuming only single line file
+      kmerClumpList = M.toList (kmerClumps k l t text)
+      count         = length kmerClumpList
+      showKmer      = \(kmer, _) -> putStr (kmer ++ " ")
+  if (o == "count")
+    then (putStr $ show count)
+    else mapM_ showKmer kmerClumpList
+  putStrLn ""
+  where
+    k = read (argMap ! "k") :: Int
+    l = read (argMap ! "l") :: Int
+    t = read (argMap ! "t") :: Int
+    f = argMap ! "f"
+    o = if (M.member "o" argMap)
+        then argMap ! "o"
+        else "patterns"
+    
+  
 execute (Command "illegal" _) = do
   putStrLn "Exception: illegal utility name."
   cltoolsUsage >> exitWith ExitSuccess
@@ -96,4 +174,14 @@ cltoolsUsage = do
   putStrLn "Usage: [-vh] <utility> <arguments>"
   putStrLn "Available utilities: "
   mapM pcmd (M.toList availableCommands)
-    where pcmd = (\ua -> putStrLn ((fst ua) ++ " " ++ (snd ua)))
+    where
+      pcmd = (\c -> putStrLn ((fst c) ++ " " ++
+                              (foldl (\o s -> o ++ "\n\t" ++ s) "" (snd c))))
+
+usage u = if M.notMember u availableCommands
+          then "Exception: " ++ u ++ " is not a valid command."
+          else "Usage: " ++ u ++ " " ++ (showOptions u)
+  where
+    showOptions :: String -> String
+    showOptions u = foldl (\o s -> (o ++ " " ++ s)) [] (availableCommands ! u)
+

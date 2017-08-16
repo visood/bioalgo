@@ -1,5 +1,5 @@
-import Dna.Dna
-import Dna.Kmer
+import Genome.Dna.Dna
+import Genome.Dna.Kmer
 import Graphics.Rendering.Chart
 import Data.Colour
 import Data.Colour.Names

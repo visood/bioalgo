@@ -29,7 +29,7 @@ library
                      , containers
                      , Chart >= 1.8
                      , Chart-diagrams
-                     --, Chart-cairo
+                     , Chart-cairo
                      , time
                      , random
                      , QuickCheck

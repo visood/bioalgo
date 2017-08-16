@@ -9,10 +9,14 @@ import qualified Data.Foldable as Foldable
 import Test.QuickCheck (Gen, choose, elements, generate, vectorOf)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import Util.Util (hamdist)
-import Genome.Data.FrequencyArray (Lexicord, lexord, lexval, listlexord, listlexval)
+import Genome.Data.FrequencyArray (Lexicord,
+                                   lexord,
+                                   lexval,
+                                   listlexord,
+                                   listlexval)
 
 {-
-Ix is used to map a contiguous subrange of values in type onto integers.
+Ix is used to map a contiguous sub-range of values in type onto integers.
 It is used primarily for array indexing (see the array package). Ix uses
 row-major order.
 -}
@@ -30,13 +34,13 @@ invalidPos :: Int
 invalidPos = -1
 
 class Ord a => Base a where
-  bases       :: [a]
-  indexed     :: Int -> a --to use in random generation
-  complement  :: a -> a
-  invalidElem :: a
-  valid       :: a -> Bool
-  valid x     = elem x bases
-  symbol      :: a -> Char
+  bases         :: [a]
+  indexed       :: Int -> a --to use in random generation
+  complement    :: a -> a
+  invalidBase   :: a
+  isValidBase   :: a -> Bool
+  isValidBase x = elem x bases
+  symbol        :: a -> Char
 
 instance Base Char where
   bases        = ['A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't']
@@ -58,7 +62,7 @@ instance Base Char where
     'n' -> 'n'
     _   ->  c
 
-  invalidElem = 'N'
+  invalidBase = 'N'
 
   symbol c = c
 
@@ -72,7 +76,7 @@ instance Base Int where
    3 -> 0
    4 -> 4
    _ -> c
-  invalidElem = 4
+  invalidBase = 4
   symbol c     = case c of
     0 -> 'A'
     1 -> 'C'
@@ -99,9 +103,8 @@ isDNA seq = all isBase  seq
 class WithBaseSeq b where
   bseq :: Base a => (b a) -> [a]
 
-newtype Nucleotide = Nuc {unNuc :: Word8} deriving (
-  Eq, Ord, Enum, Ix, Storable
-  )
+newtype Nucleotide = Nuc {unNuc :: Word8} deriving
+  (Eq, Ord, Enum, Ix, Storable)
 
 instance Bounded Nucleotide where
   minBound = Nuc 0
@@ -139,7 +142,7 @@ instance Base Nucleotide where
   complement (Nuc 8)  = Nuc 1
   complement (Nuc 15) = Nuc 15
   complement x = x
-  invalidElem = Nuc 15
+  invalidBase = Nuc 15
   symbol (Nuc 0)  = '-'
   symbol (Nuc 1)  = 'A'
   symbol (Nuc 2)  = 'C'

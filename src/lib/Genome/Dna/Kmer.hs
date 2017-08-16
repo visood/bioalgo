@@ -39,22 +39,25 @@ instance Foldable Kmer where
 
 class Cluster a where
   element   :: Base b => (a b) -> [b]
-  poses     :: Base b => (a b) -> Set Int
+  positions :: Base b => (a b) -> Set Int
+
   leftmost  :: Base b => (a b) -> Int
   leftmost a = if null xs
                then invalidPos
                else Set.findMin xs
-               where xs = poses a
+               where xs = positions a
+
   rightmost :: Base b => (a b) -> Int
   rightmost a = if null xs
                 then invalidPos
                 else Set.findMax xs
-                where xs = poses a
+                where xs = positions a
+
   size      :: Base b => (a b) -> Int
-  size a    = Set.size (poses a)
+  size a    = Set.size (positions a)
 
   regionCovered    :: Base b => (a b) -> Int
-  regionCovered c  = (maximum (poses c))  - (minimum (poses c)) + 1
+  regionCovered c  = (maximum (positions c))  - (minimum (positions c)) + 1
 
   merge     :: (Base b, Cluster c) => (c b) -> (a b) -> (a b)
   absorb    :: Base b => Kmer b -> (a b) -> (a b)
@@ -69,10 +72,10 @@ instance Located Clumer where
   loc   (Clumer _  xs) = Set.findMin xs
 
 instance Cluster Clumer where
-  element (Clumer s  _) = s
-  poses (Clumer _  xs) = xs
+  element (Clumer s  _)    = s
+  positions (Clumer _  xs) = xs
   merge c (Clumer s xs) = if element c == s
-                          then Clumer s (Set.union (poses c) xs)
+                          then Clumer s (Set.union (positions c) xs)
                           else Clumer s xs
   absorb (Kmer s x) (Clumer r ys) = if s == r
                                     then Clumer r (Set.insert x ys)
@@ -107,7 +110,24 @@ addClump l xss x = case growClump l x xs [] of
 
 clumpInts :: Int -> Int -> [Int] -> [[Int]]
 clumpInts l t xs = filter (\ys -> length ys >= t)
-                          (foldl (\xss x -> addClump l xss x) [] xs)
+                   (foldl (\xss x -> addClump l xss x) [] xs)
+{-
+@function clump integer positions of kmers
+@params k :: Int kmer length
+@params l :: Int window size containing the clump
+@params t :: Int number of kmers that must lie inside the window
+@params xs ::[Int] kmer positions, sorted
+@return clumps :: [[Int]] all (l, t) clumps
+-}
+clumpKmerPositions :: Int -> Int -> Int -> [Int] -> [[Int]]
+clumpKmerPositions _ _ _ [] = []
+clumpKmerPositions k l t (x:ys) = if (length withFirst >= t)
+                                  then  withFirst : withoutFirst
+                                  else withoutFirst
+  where
+    withFirst    = takeWhile (\y -> y + k <= x + l) (x:ys)
+    withoutFirst = clumpKmerPositions k l t ys
+
 
 clumps :: Base b => Int -> Int -> Clumer b -> [Clumer b]
 clumps l t (Clumer s xs) = map (\ys -> Clumer s (Set.fromList ys))
@@ -152,8 +172,49 @@ mostFrequentKmers k text     = (n, m ! n)
     m = frequentKmers k text
     n = (maximum . M.keys) m
 
-topFrequentKmers             :: Base a => Int -> Map [a] Int -> [([a], Int)]
-topFrequentKmers n kcs       = take n (sortBy sortGT (M.toList kcs) )
+{-
+more than one kmer may appear a given number of times
+--- all these kmers must have the same rank.
+@function scoreRanks gives ranks to a list of scores.
+@param    a sorted list of scores
+@return   a list of ranks
+-}
+
+scoreRanks :: [Int] -> [Int]
+scoreRanks scores = snd (rankWithIncr scores)
+  where
+    rankWithIncr :: [Int] -> (Int, [Int])
+    rankWithIncr scrs = case scrs of
+      []     -> (1, [])
+      x:[]   -> (1, [1])
+      x:y:zs -> if (x == y)
+                then ( incr + 1, ry : remainingScores )
+                else ( 1, (ry + incr) : remainingScores)
+        where
+          incr                   = fst incrAndRemainingScores
+          ry                     = head remainingScores
+          remainingScores        = snd incrAndRemainingScores
+          incrAndRemainingScores = rankWithIncr (y:zs)
+        
+  
+
+{-
+Top frequent kmers, not just the top from a sorted sequence,
+but top ranked kmers up to a rank provided
+@function find the top ranked kmers
+@param n: rank up to which kmers are desired
+@param kcs: a Map of kmer sequence to its frequency
+@return: top ranked (up to rank n) kmers in kcs
+-}
+topFrequentKmers :: Base a => Int -> Map [a] Int -> [([a], Int)]
+topFrequentKmers r0 kmerAndCounts = map fst (dropWhile (\(_, rank) -> rank > r0)
+                                             (zip kmerAndCountsList ranks))
+  where
+    ranks = scoreRanks scores
+    scores = map snd kmerAndCountsList
+    kmerAndCountsList = (sortBy compKmerOcc (M.toList kmerAndCounts))
+  
+--topFrequentKmers n kcs       = take n (sortBy sortGT (M.toList kcs) )
 
 sortGT (a1, b1) (a2, b2)
   | b1 < b2   = GT
@@ -161,8 +222,14 @@ sortGT (a1, b1) (a2, b2)
   | a1 < a2   = GT
   | otherwise = LT
 
-frequentKmers                :: Base a => Int -> [a] -> Map Int [[a]]
-frequentKmers k text         = invertedMap (kmerCounts k text)
+compKmerOcc (k1, c1) (k2, c2)
+  | c1 < c2   = LT
+  | c1 > c2   = GT
+  | k1 < k2   = LT
+  | otherwise = GT
+
+frequentKmers        :: Base a => Int -> [a] -> Map Int [[a]]
+frequentKmers k text = invertedMap (kmerCounts k text)
 
 {-
 invertedMap                  :: (Show a, Ord b) => Map [a] b -> Map b [[a]]
@@ -171,16 +238,16 @@ invertedMap                  = M.foldlWithKey (\m a b ->
                                               ) M.empty
 -}
 
-kmerCounts                   :: Base a => Int -> [a] -> Map [a] Int
-kmerCounts k text            = if (length kmer) < k
+kmerCounts        :: Base a => Int -> [a] -> Map [a] Int
+kmerCounts k text = if (length kmer) < k
                                then M.empty
                                else M.insertWith (+) kmer 1 kcounts
   where
     kmer = take k text
     kcounts = kmerCounts k (drop 1 text)
 
-kmerOccs                     :: Base a => Int -> [a] -> Map [a] [Int]
-kmerOccs k text              = kmerOccsFromPos 0 k text
+kmerOccs        :: Base a => Int -> [a] -> Map [a] [Int]
+kmerOccs k text = kmerOccsFromPos 0 k text
   where
     kmerOccsFromPos :: Base a => Int -> Int -> [a] -> Map [a] [Int]
     kmerOccsFromPos p k text = if (length kmer) < k
@@ -205,13 +272,13 @@ allKmers0 k text            = if null text
                               then []
                               else (take k text) : (allKmers0 k (drop 1 text))
 
-ptrnCount                :: Base a =>  [a] -> [a] -> Int
-ptrnCount _ []           = 0
-ptrnCount [] _           = 0
-ptrnCount ptrn text   = if (take l text == ptrn) then 1 + n else n
+patternCount                :: Base a =>  [a] -> [a] -> Int
+patternCount _ []           = 0
+patternCount [] _           = 0
+patternCount ptrn text   = if (take l text == ptrn) then 1 + n else n
   where
     l = length ptrn
-    n = ptrnCount ptrn (drop 1 text)
+    n = patternCount ptrn (drop 1 text)
 
 
 isPrefix                    :: Base a => [a] -> [a] -> Bool
@@ -262,7 +329,10 @@ occurences2 ptrn text    = case (nextOccFrom 0 ptrn text) of
 --kmerOccs                           :: Base a => Int -> [a] -> Map [a] [Int]
 kmerClumps :: Base a => Int -> Int -> Int -> [a] -> Map [a] [[Int]]
 kmerClumps k l t text = M.filter (\xs -> not (null xs))
-                                 (M.map (\xs -> clumpInts l t xs) (kmerOccs k text))
+                        (M.map (clumpKmerPositions k l t) (kmerOccs k text))
+  
+--kmerClumps k l t text = M.filter (\xs -> not (null xs))
+                                 --(M.map (\xs -> clumpInts l t xs) (kmerOccs k text))
 
 runningCount :: (Base b, Show b) => [b] -> [b] -> [Int]
 runningCount _ [] = []
