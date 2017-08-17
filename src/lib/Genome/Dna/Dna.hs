@@ -188,38 +188,32 @@ randNuc  = elements [_A_, _C_, _G_, _T_]
 randomDna :: Int -> Gen [Nucleotide]
 randomDna k = vectorOf k randNuc
 
-charBaseLexOrd = Lexico.Order k bo bv
-  where
-    k = 4
-    bv 0 = 'A'
-    bv 1 = 'C'
-    bv 2 = 'G'
-    bv 3 = 'T'
-    bv _ = 'N'
-
-    bo 'A' = 0
-    bo 'C' = 1
-    bo 'G' = 2
-    bo 'T' = 3
-    bo  _  = 4
-            
-
-
 newtype AsBase b = AsBase b deriving Show
 
 instance (Base b) => Lexico.LexOrd (AsBase b)  where
-    lexvalue i = AsBase (indexed i)
-    lexorder (AsBase x) = baseIndex x
+  elemset             = map AsBase bases
+  lexvalue i          = AsBase (indexed i)
+  lexorder (AsBase x) = baseIndex x
+
+baseSeq :: [b] -> [AsBase b]
+baseSeq = map AsBase
 
 --numberBases :: Base b => Int
 --numberBases = length (bases::[b])
 
-baseLexicOrder :: Base b => Lexico.Order b
-baseLexicOrder = Lexico.Order 4 baseIndex indexed
+baseLexOrder :: Base b => Lexico.Order b
+baseLexOrder = Lexico.Order 4 baseIndex indexed
 
-charBaseLexicOrder = baseLexicOrder :: Lexico.Order Char
-intBaseLexicOrder  = baseLexicOrder :: Lexico.Order Int
-nucBaseLexicOrder  = baseLexicOrder :: Lexico.Order Nucleotide
+charBaseLexOrd = baseLexOrder :: Lexico.Order Char
+charBaseLexSeq = Lexico.ordseq charBaseLexOrd
+  
+intBaseLexOrd  = baseLexOrder :: Lexico.Order Int
+intBaseLexSeq  = Lexico.ordseq intBaseLexOrd
+
+nucBaseLexOrd  = baseLexOrder :: Lexico.Order Nucleotide
+nucBaseLexSeq  = Lexico.ordseq nucBaseLexOrd
+
+  
 
 --baseLexicOrder :: Base b => Lexico.Order (AsBase b)
 --baseLexicOrder = Lexico.lexicord 4
