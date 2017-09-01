@@ -11,7 +11,9 @@ import Genome.Dna.Dna
 
 
 cummsum :: (Foldable t, Num a) => t a -> [a]
-cummsum xs = reverse $ snd $ foldl (\(c, cs) x -> (c + x, (c + x):cs)) (0, []) xs
+cummsum xs = 0:(reverse $ snd $ foldl addHead (0, []) xs)
+  where
+    addHead = \(c, cs) x -> (c + x, (c + x):cs)
 
 skew :: (Base b, Show b) => b -> b -> [b] -> [Int]
 skew x y text = cummsum $ map skvalue text

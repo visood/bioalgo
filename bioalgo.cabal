@@ -34,6 +34,8 @@ library
                      , random
                      , QuickCheck
                      , vector
+                     , split
+                     , set-monad
   default-language:    Haskell2010
 
 executable bioalgo-tools

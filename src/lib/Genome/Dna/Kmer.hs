@@ -4,8 +4,8 @@ module Genome.Dna.Kmer where
 import Data.Map (Map, (!))
 import Data.List (sortBy)
 import qualified Data.Map as M
-import Data.Set (Set)
-import qualified Data.Set as Set
+import Data.Set.Monad (Set)
+import qualified Data.Set.Monad as Set
 import Data.Maybe
 import Util.Util (invertedMap, hamdist)
 import Genome.Dna.Dna
@@ -410,6 +410,20 @@ prefixCount _ [] = 0
 prefixCount f text = if (f text) then 1 + n else n
   where n = prefixCount f (tail text)
 
+{-
+@function: patterns within a hamming distance of a given pattern, and their positions
+@param: hamming distance d
+@param: target pattern
+@param: text
+@return: list of approximate patterns and their positions
+-}
+withinHammingDistance :: Base b => Int -> [b] -> [b] -> Map [b] [Int]
+withinHammingDistance d word text = M.fromList $ filter closeBy koccs
+  where
+    closeBy = \(p, _) -> hamdist p word <= d
+    koccs   = M.toList (kmerOccs (length word) text)
+
+
 withinHamDistRevComps :: Base b => Int -> [b] -> [b] -> Bool
 withinHamDistRevComps _ _ []   = False
 withinHamDistRevComps _ [] _   = False
@@ -435,6 +449,93 @@ appxKmerCounts d k text = foldl
     hcount p = foldl (\s q -> if sim q then s + (kcs ! q) else s) 0 (M.keys kcs)
       where sim q = hamdist p q <= d
 
+kmersWithOneMismatch :: Base b => [b] -> [[b]]
+kmersWithOneMismatch [] = []
+kmersWithOneMismatch (x:ys) = firstFlipped ++ firstNotFlipped
+  where
+    firstFlipped    = map (\z -> z:ys) (filter (/=x) bases)
+    firstNotFlipped = map (\zs -> x:zs) (kmersWithOneMismatch ys)
+
+kmersWithinHamDist :: Base b => Int -> [b] -> Set [b]
+kmersWithinHamDist _ []     = Set.empty
+kmersWithinHamDist 0 xs     = Set.fromList [xs]
+kmersWithinHamDist 1 xs     = Set.insert xs $ Set.fromList (kmersWithOneMismatch xs)
+kmersWithinHamDist n xs = do
+  p1 <- kmersWithinHamDist (n - 1) xs
+  p  <- kmersWithinHamDist 1 p1
+  return p
+
+revCompKmersWithinHamDist :: Base b => Int -> [b] -> Set [b]
+revCompKmersWithinHamDist d bs = kmersWithinHamDist d (reverseComplement bs)
+
+kmersOrRevCompWithinHamDist :: Base b => Int -> [b] -> Set [b]
+kmersOrRevCompWithinHamDist _ [] = Set.empty
+kmersOrRevCompWithinHamDist 1 xs = Set.union
+                                   (Set.insert xs $ Set.fromList (kmersWithOneMismatch xs))
+                                   (Set.insert rs $ Set.fromList (kmersWithOneMismatch rs))
+  where rs = reverseComplement xs
+  
+kmersOrRevCompWithinHamDist n xs = do
+  p1 <- kmersOrRevCompWithinHamDist (n - 1) xs
+  p  <- kmersOrRevCompWithinHamDist 1 p1
+  return p
+
+mismatchingKmerCounts :: Base b => Int -> Int -> [b] -> Map [b] Int
+mismatchingKmerCounts d k text = foldl (\m (p, c) -> M.insertWith (+) p c m)
+                                 M.empty
+                                 mmkcs
+  where
+    mmkcs = do
+      (word, count) <- M.toList $ kmerCounts k text
+      mmk    <- Set.toList $ kmersWithinHamDist d word
+      return (mmk, count)
+    
+mismatchingRevCompKmerCounts :: Base b => Int -> Int -> [b] -> Map [b] Int
+mismatchingRevCompKmerCounts d k text = foldl (\m (p, c) -> M.insertWith (+) p c m)
+                                        M.empty
+                                        mmkcs
+  where
+    mmkcs = do
+      (word, count) <- M.toList $ kmerCounts k text
+      mmk    <- Set.toList $ kmersWithinHamDist d (reverseComplement word)
+      return (mmk, count)
+    
+
+{-
+mismatchKmerCounts d k text = foldl
+                              (\m p -> M.insert p (hcount p) m)
+                              M.empty
+                              (M.keys kcs)
+  where
+    hcount p = foldl (\s q -> if sim q then s + (kcs ! q) else s) 0 (M.keys kcs)
+      where sim q = hamdist p q <= d
+    kcs = kmerCounts k text
+-}
+
+mostFreqMismatchingKmers :: Base b => Int -> Int -> [b] -> (Int, [[b]])
+mostFreqMismatchingKmers d k text = (n, m ! n)
+  where
+    m = invertedMap (mismatchingKmerCounts d k text)
+    n = (maximum . M.keys) m
+
+
+mostFreqMismatchingRevCompKmers :: Base b => Int -> Int -> [b] -> (Int, [[b]])
+mostFreqMismatchingRevCompKmers d k text = (n, m ! n)
+  where
+    m = invertedMap (mismatchingRevCompKmerCounts d k text)
+    n = (maximum . M.keys) m
+
+mostFreqMismatchingKmersWithRevComp :: Base b => Int -> Int -> [b] -> (Int, [[b]])
+mostFreqMismatchingKmersWithRevComp d k text = (n , immrc ! n)
+  where
+    m     = mismatchingKmerCounts d k text
+    mrc   = mismatchingRevCompKmerCounts d k text
+    mmrc  = foldl (\ms (p, c) -> M.insertWith (+) p c ms) m (M.toList mrc)
+    immrc = invertedMap mmrc
+    n     = (maximum . M.keys) immrc
+    
+  
+
 appxKmerRevCompCounts :: Base b => Int -> Int -> [b] -> Map [b] Int
 appxKmerRevCompCounts d k text = foldl
                                  (\m p -> M.insert p (hcount p) m)
@@ -451,3 +552,5 @@ mostAppxFreqRevCompKmers d k text = (n, m ! n)
   where
     m = invertedMap (appxKmerRevCompCounts d k text)
     n = (maximum . M.keys) m
+
+

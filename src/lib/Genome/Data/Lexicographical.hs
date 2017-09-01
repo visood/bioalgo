@@ -1,8 +1,9 @@
 {-#LANGUAGE GADTs, StandaloneDeriving, GeneralizedNewtypeDeriving #-}
 module Genome.Data.Lexicographical where
 
-import Data.Map (Map, (!))
-import qualified Data.Map as M
+import Data.Vector (Vector, (!), (//))
+import qualified Data.Vector as Vec
+import Data.List (sort)
 import Util.Util (invertedMap, hamdist)
 
 
@@ -94,3 +95,64 @@ kmerSeq o k bs = kmerSeqFromEncoded (ordseq o bs)
         l = length kelems
         firstKmer = seqLexOrd (cardinality o) kelems
         kelems = take k xs
+
+
+
+{-
+our lexicographical order for a sequence assumes that
+the order position increases along the sequence.
+this assumption is useful because we do not need to specify the length of the
+sequence to be encoded.
+however, we may want to encode sequences in which the first element is in
+the highest position.
+this encoding will require the length of the sequence to decode.
+-}
+
+orderForPattern :: Order b -> [b] -> Int
+orderForPattern o xs = listOrder o (reverse xs)
+
+{-
+@param element Order
+@param coded value of the sequence
+@param length of the sequence
+@return decoded sequence
+-}
+patternForOrder :: Order b -> Int -> Int -> [b]
+patternForOrder ob v n = reverse (revPatternForOrder v n)
+  where
+    revPatternForOrder v n
+      | n == 0 = []
+      | otherwise = first : (revPatternForOrder (div v k) (n - 1))
+      where
+        first = ((value ob) (mod v k))
+        k = cardinality ob
+
+patternSeq :: Order b -> Int -> [b] -> [Int]
+patternSeq o k bs = patternSeqFromEncoded (ordseq o bs)
+  where
+    patternSeqFromEncoded :: [Int] -> [Int]
+    patternSeqFromEncoded xs = if l == k then (first:rest) else []
+      where
+        l = length kelems
+        first = (seqLexOrd (cardinality o) (reverse kelems)) - 1
+        rest = patternSeqFromEncoded (drop 1 xs)
+        kelems = take k xs
+        
+                         
+
+patternFreqArray :: Order b -> Int -> [b] -> Vector Int
+patternFreqArray o k bs = occs (patternSeq o k bs) (Vec.replicate n 0)
+  where
+    n = maxListOrder o k
+    occs [] v = v
+    occs (x:xs) v = occs xs (v // [(x, (v ! x) + 1)])
+
+
+patternFreqPairs :: Order b -> Int -> [b] -> [(Int, Int)]
+patternFreqPairs _ _ [] = []
+patternFreqPairs o k (x:xs) = occs ((order o) x) 1 (sort $ patternSeq o k xs)
+  where
+    occs y c [] = [(y, c)]
+    occs y c (z:zs) = if (z == y)GF
+                      then occs y (c + 1) zs
+                      else (y, c) : (occs z 1 zs)
