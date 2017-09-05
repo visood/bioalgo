@@ -80,7 +80,7 @@ instance Base Char where
 instance Base Int where
   bases        = [0, 1, 2, 3]
   indexed i    = if (i < 0) then 4 else min i 4
-  baseIndex i      = min i 4
+  baseIndex i = min i 4
   complement c = case c of
    0 -> 3
    1 -> 2
@@ -185,8 +185,8 @@ dnaString (b:bs) = (symbol b) : (dnaString bs)
 randNuc0 = elements [gap, _A_, _C_, _G_, _T_]
 randNuc  = elements [_A_, _C_, _G_, _T_]
 
-randomDna :: Int -> Gen [Nucleotide]
-randomDna k = vectorOf k randNuc
+randomNucSeq :: Int -> Gen [Nucleotide]
+randomNucSeq k = vectorOf k randNuc
 
 newtype AsBase b = AsBase b deriving Show
 

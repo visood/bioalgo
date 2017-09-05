@@ -32,7 +32,7 @@ prop_seqKmerSize k seq = all (\c -> length c == k) (M.keys $ kmerOccs k seq)
 prop_clumerInSeq :: (Base b, Show b) => Int -> [b] -> Bool
 prop_clumerInSeq k bs = all isat (clumers k bs)
   where
-    isat = \c -> all (\x -> take k (drop x bs) == (element c)) (poses c)
+    isat = \c -> all (\x -> take k (drop x bs) == (element c)) (positions c)
 
 
 prop_kmerOccInSeq :: (Base b, Show b) => Int -> [b] -> Bool
@@ -99,8 +99,8 @@ prop_clumpsSizeMinBound x y c = all (\s -> s >= t) (map size cls)
     l   = abs x
     t   = 1 + abs y
 
-test_ptrnCount ::  [Nucleotide] -> Bool
-test_ptrnCount p1 = null p1 || ptrnCount p1 text == 100
+test_patternCount ::  [Nucleotide] -> Bool
+test_patternCount p1 = null p1 || patternCount p1 text == 100
   where
     text = concat $ take 100 (repeat $ p1 ++ [_N_])
 
@@ -118,7 +118,7 @@ test_isRepeated :: (Base b, Show b) => Int -> [b] -> [b] -> Bool
 test_isRepeated n xs ys = r && not nr
   where
     r  = isRepeated xs rptseq
-    nr = isRepeated xs (ys ++ (invalidElem:rptseq))
+    nr = isRepeated xs (ys ++ (invalidBase:rptseq))
     rptseq = concat $ take an (repeat xs)
     an = 1 + abs n
 
@@ -138,7 +138,7 @@ test_occurences ptrn xs = occurences2 ptrn (patins ptrn axs) == occs axs
     patins :: (Base b1, Show b1) => [b1] -> [Int] -> [b1]
     patins _ [] = []
     patins [] _ = []
-    patins seq (x:ys) = (take x (repeat (invalidElem))) ++ seq ++ (patins seq ys)
+    patins seq (x:ys) = (take x (repeat (invalidBase))) ++ seq ++ (patins seq ys)
     axs = map abs xs
     k = length ptrn
     lup = length (L.nub ptrn)

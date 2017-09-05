@@ -13,9 +13,6 @@ import Genome.Dna.Dna
 set :: Ord b => [b] -> Set b
 set xs = Set.fromList xs
 
---hiddenMessage                      :: Base a =>  [a] -> [a]
---hiddenMessage text                 = "???"
-
 class Located a where
   loc       :: Base b => (a b) -> Int
   dis       :: Base b => Located c => (a b) -> (c b) -> Int
@@ -266,11 +263,11 @@ wordCounts words            = foldl (\m w -> M.insertWith (+) w 1 m) M.empty wor
 
 allKmers                    :: Base a => Int -> [a] -> [[a]]
 allKmers k text             = take ((length text) - k + 1) (allKmers0 k text)
-
-allKmers0                   :: Base a => Int -> [a] -> [[a]]
-allKmers0 k text            = if null text
-                              then []
-                              else (take k text) : (allKmers0 k (drop 1 text))
+  where
+    allKmers0                   :: Base a => Int -> [a] -> [[a]]
+    allKmers0 k text            = if null text
+                                  then []
+                                  else (take k text) : (allKmers0 k (drop 1 text))
 
 patternCount                :: Base a =>  [a] -> [a] -> Int
 patternCount _ []           = 0
@@ -553,4 +550,10 @@ mostAppxFreqRevCompKmers d k text = (n, m ! n)
     m = invertedMap (appxKmerRevCompCounts d k text)
     n = (maximum . M.keys) m
 
-
+{-
+generate all kmers of length k
+-}
+kmerPatterns :: Base b => Int -> [[b]]
+kmerPatterns 0 = []  
+kmerPatterns 1 =  [[b] | b <- bases]
+kmerPatterns k = [x:smaller | x <- bases, smaller <- kmerPatterns (k - 1)]

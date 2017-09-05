@@ -56,7 +56,7 @@ main = do
     putStrLn ""
     putStr "test ptrn count: "
   quickCheckWith stdArgs {maxSuccess = 1000} (
-    test_ptrnCount :: [Nucleotide] -> Bool
+    test_patternCount :: [Nucleotide] -> Bool
     )
   do
     putStrLn ""

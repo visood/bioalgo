@@ -20,10 +20,13 @@ library
                      , Util.Util
                      , Genome.Dna.Dna
                      , Genome.Dna.Kmer
+                     , Genome.Dna.Variant
+                     , Genome.Dna.Motif
                      , Genome.Dna.Replication
                      , Genome.Data.FrequencyArray
                      , Genome.Data.Lexicographical
-                     , Test.Examples.Prices
+                     , Test.Genome.Dna.Kmer
+                     , Test.Genome.Dna.Dna
   build-depends:       base >= 4.7 && < 5
                      , filepath
                      , containers

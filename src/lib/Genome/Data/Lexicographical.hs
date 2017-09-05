@@ -46,8 +46,8 @@ listValue o x = (first o x) : (listValue o (rest o x))
 a list represented using its elements lexical ordering.
 0 represents an empty list
 -}
-data OrdList a = OrdList { elemOrder :: Order a -- lexical order on elements
-                         , repval :: Int }-- representative value
+data OrdList a = OrdList {elemOrder :: Order a -- lexical order on elements
+                         ,repval :: Int }-- representative value
 
 empty :: OrdList a -> Bool
 empty (OrdList _ 0) = True
@@ -153,6 +153,6 @@ patternFreqPairs _ _ [] = []
 patternFreqPairs o k (x:xs) = occs ((order o) x) 1 (sort $ patternSeq o k xs)
   where
     occs y c [] = [(y, c)]
-    occs y c (z:zs) = if (z == y)GF
+    occs y c (z:zs) = if (z == y)
                       then occs y (c + 1) zs
                       else (y, c) : (occs z 1 zs)
