@@ -51,8 +51,6 @@ instance Base b => Show (MotifMatrix b) where
                                      (\s m -> s ++ (map symbol m) ++ "\n")
                                      ""
                                      ms)
---type MotifMatrix b = [[b]]
-
 motifMatrix :: Base b => [[b]] -> MotifMatrix b
 motifMatrix [] = MotifMatrix 0 0 []
 motifMatrix motifs = MotifMatrix nrow ncol motifs
@@ -62,6 +60,9 @@ motifMatrix motifs = MotifMatrix nrow ncol motifs
 
 consMotif :: Base b => [b] -> MotifMatrix b -> MotifMatrix b
 consMotif motif (MotifMatrix nr nc elems) = MotifMatrix (nr + 1) nc (motif:elems)
+
+rowReverse :: Base b => MotifMatrix b -> MotifMatrix b
+rowReverse (MotifMatrix nr nc elems) = MotifMatrix nr nc (reverse elems)
 
 colhead :: MotifMatrix b -> [b]
 colhead (MotifMatrix _ _ motifs) = map head motifs
@@ -81,6 +82,9 @@ rowtail (MotifMatrix nr nc motifs) = MotifMatrix (nr - 1) nc (tail motifs)
 rows :: Base b => MotifMatrix b -> [[b]]
 rows mm = elems mm
 
+
+vstack :: MotifMatrix b -> MotifMatrix b -> MotifMatrix b
+vstack mm1 mm2 = MotifMatrix (nrow mm1 + nrow mm2) (ncol mm1) (elems mm1 ++ elems mm2)
 {-
 For four nucleotides, we use 4-tuple for counting nucleotides in  motifs
 -}
@@ -92,6 +96,17 @@ profileMatrixFromRows [[], [], [], []] = []
 profileMatrixFromRows (as:cs:gs:ts:[]) = (head as, head cs, head gs, head ts):rest
   where rest = profileMatrixFromRows [tail as, tail cs, tail gs, tail ts]
 
+
+updatedCountMatrix :: Base b => CountMatrix -> [b] -> CountMatrix
+updatedCountMatrix cm [] = cm
+updatedCountMatrix ((na, nc, ng, nt):nm') (b:bs') =
+  updatedCount0 : (updatedCountMatrix nm' bs')
+  where 
+    updatedCount0 = case baseIndex b of
+      0 -> (na + 1, nc, ng, nt)
+      1 -> (na, nc + 1, ng, nt)
+      2 -> (na, nc, ng + 1, nt)
+      3 -> (na, nc, ng, nt + 1)
 
 
 getA :: BaseVec t -> t
@@ -141,6 +156,8 @@ countMatrix mm = if (ncol mm == 0)
                  then []
                  else (baseCount $ colhead mm) : (countMatrix $ coltail mm)
   
+--profileMatrixUpdatedBy :: [Double] -> ProfileMatrix -> ProfileMatrix
+--profileMatrixUpdatedBy ps pm = 
   
 profileMatrix :: Base b => MotifMatrix b -> ProfileMatrix
 profileMatrix mm = map normedTuple $ countMatrix mm
@@ -148,21 +165,41 @@ profileMatrix mm = map normedTuple $ countMatrix mm
     normedTuple (na, nc, ng, nt) = (normed na, normed nc, normed ng, normed nt)
     normed n = (fromIntegral n :: Double) / numberSeqsD
     numberSeqsD = (fromIntegral (nrow mm) :: Double)
-  
+
+profileMatrixWithPseudoCount :: Base b => Int -> MotifMatrix b -> ProfileMatrix
+profileMatrixWithPseudoCount n mm = profileMatrix mmpc
+  where
+    mmpc = MotifMatrix newr newc newelems
+    newr = 4 * n + nrow mm
+    newc = ncol mm
+    --newelems :: Base b => [b]
+    newelems = (rows mm) ++ as ++ cs ++ gs ++ ts
+    as = getBaseSeqRows 0
+    cs = getBaseSeqRows 1
+    gs = getBaseSeqRows 2
+    ts = getBaseSeqRows 3
+    getBaseSeqRows = take n . repeat . take c . repeat . indexed 
+    c   = ncol mm
+
+profileMatrixFromSeqs :: Base b => [[b]] -> ProfileMatrix
+profileMatrixFromSeqs = profileMatrix . motifMatrix
+
+profileMatrixOf1 :: Base b => [b] -> ProfileMatrix
+profileMatrixOf1 text = profileMatrixFromSeqs [text]
    
 
-baseWithMaxOccurence :: BaseVec Double -> Int
-baseWithMaxOccurence (a, c, g, t) = snd $ maximumBy (comparing fst) withBaseIndex
-  where withBaseIndex = [(a, 0), (c, 1), (g, 2), (t, 3)]
+baseWithMaxOccurence :: BaseVec Int -> Int
+baseWithMaxOccurence (na, nc, ng, nt) = snd $ maximumBy (comparing fst) 
+                                        [(na, 0), (nc, 1), (ng, 2), (nt, 3)]
 
 
 consensusMotif :: Base b => MotifMatrix b -> [b]
-consensusMotif mm = maxOccBaseSeq (profileMatrix mm)
+consensusMotif mm = maxOccBaseSeq (countMatrix mm)
   where
-    maxOccBaseSeq :: Base b => [BaseVec Double] -> [b]
+    maxOccBaseSeq :: Base b => [BaseVec Int] -> [b]
     maxOccBaseSeq [] = []
-    maxOccBaseSeq ((pa, pc, pg, pt) : bvs') = b : maxOccBaseSeq bvs'
-      where b = indexed $ baseWithMaxOccurence (pa, pc, pg, pt)
+    maxOccBaseSeq ((na, nc, ng, nt) : bvs') = b : maxOccBaseSeq bvs'
+      where b = indexed $ baseWithMaxOccurence (na, nc, ng, nt)
 
 log4 :: Double -> Double
 log4 x = log x / log 4
@@ -191,61 +228,97 @@ columnEntropy mm = baseEntropyByElems $ profileMatrix mm
 totalEntropy :: Base b => MotifMatrix b -> Double
 totalEntropy mm = foldl (\s e -> s + e) 0.0 $ columnEntropy mm
 
-distanceOfPattern :: Base b => [b] -> MotifMatrix b -> Int
-distanceOfPattern word mm = foldl (\d r -> d + (hamdist word r)) 0 $ rows mm
+mmScoreOfPattern :: Base b => [b] -> MotifMatrix b -> Int
+mmScoreOfPattern word mm = foldl (\d r -> d + (hamdist word r)) 0 $ rows mm
 
 
-distanceFromDna :: Base b => [[b]] -> [b] -> Int
-distanceFromDna dna word = foldl (\d text -> d + (dseq text)) 0 dna
+distanceFromSequences :: Base b => [[b]] -> [b] -> Int
+distanceFromSequences dna word = foldl (\d text -> d + (dseq text)) 0 dna
   where dseq text = distanceFromSeq text word 
 
 distanceFromSeq :: Base b => [b] -> [b] -> Int
 distanceFromSeq text word = minimum $ map (hamdist word) candidates
   where candidates = allKmers (length word) text
 
-motifForPattern :: Base b => [b] -> [b] -> [b] --([b], Int)
-motifForPattern word text  = fst $ minimumBy (comparing snd) kmersInSeq
+motifSimilarToPattern :: Base b => [b] -> [b] -> [b] --([b], Int)
+motifSimilarToPattern word text  = fst $ minimumBy (comparing snd) kmersInSeq
   where
     kmersInSeq = map (\xs -> (xs, hamdist word xs)) $ allKmers k text
     k          = length word
     
   
-medianString :: Base b => Int ->  [[b]] -> [b]
+medianString :: Base b => Int -> [[b]] -> [b]
 medianString k dna = fst $ minimumBy (comparing snd) $
                      map (\word -> (word, dis word)) $ kmerPatterns k
-  where dis = distanceFromDna dna
-
+  where dis = distanceFromSequences dna
 
 kmerProbability :: Base b => ProfileMatrix -> [b] -> Double
 kmerProbability pm bs = exp sumlogs
   where sumlogs = foldl (\s l -> s + l) 0.0 $
                   map (\(b, p) -> (log $ getValueForBase b p)) $ zip bs pm
-                        
 
 mostProbableMotif :: Base b => Int -> ProfileMatrix -> [b] -> [b]
-mostProbableMotif k pm text = fst $ maximumBy (comparing snd) kps
+mostProbableMotif k pm text = fst $ maxByOrFirst (comparing snd) (head kps) (tail kps)
   where
     kps = map (\km -> (km, kmerProbability pm km)) $ allKmers k text
+--mostProbableMotif k pm text = fst $ maximumBy (comparing snd) kps
 
-greedilySearchedMotif :: Base b => Int -> [[b]] -> MotifMatrix b
-greedilySearchedMotif _ [] = MotifMatrix []
-greedilySearchedMotif k (seq0:[]) = MotifMatrix 1 k ([take k seq0])
-greedilySearchedMotif k (seq0:remSeqs) =
-  fst $ minimumBy (comparing snd) ( map (\mm -> (scoreMotifMatrix dna mm, mm))
-                                    greedilyGrownFrom (allKmers k seq0) $
-                                    
-                                     
+{-
+We can get dna motifs greedily.
+The core idea is to start with a probability profile,
+and add motifs from each sequence while updating the profile matrix
+-}
+greedyMotifsFromProfile :: Base b => Int -> ProfileMatrix -> [[b]] -> MotifMatrix b
+greedyMotifsFromProfile k pminit = fst . foldl grow (MotifMatrix 0 k [], pminit)
   where
-    greedilyGrownFrom kmerSeeds (lastSeq:[]) = do
-      seed <- kmerSeeds
-      let pm = profileMatrix $ MotifMatrix 1 k [seed]
-      return $ mostProbableMotif k pm lastSeq
+    --grow = \(mm, pm) text -> (updatedMotifMatrix, updatedProfileMatrix)
+    grow :: Base b => (MotifMatrix b, ProfileMatrix) -> [b] -> (MotifMatrix b, ProfileMatrix)
+    grow (mm, pm) text =  (updatedMotifMatrix, updatedProfileMatrix)
+      where
+        updatedProfileMatrix = profileMatrix updatedMotifMatrix
+        updatedMotifMatrix   = consMotif motifFromText mm
+        motifFromText        = mostProbableMotif k pm text
 
-    greedilyGrownFrom kmerSeeds (seqNext:otherSeqs) =
-      
-
-greedilySearchedMotif k (seq0:remSeqs) = consMotif motif0 motifsOfRemSeqs
+{-
+grow a MotifMatrix, greedily
+-}
+greedilyGrownMotifMatrix :: Base b => MotifMatrix b -> [[b]] -> MotifMatrix b
+greedilyGrownMotifMatrix = foldl consMostProbableMotif
   where
-    motif0          = mostProbableMotif k pm seq0
-    pm              = profileMatrix motifsOfRemSeqs
-    motifsOfRemSeqs = greedilySearchedMotif k remSeqs
+    consMostProbableMotif :: Base b => MotifMatrix b -> [b] -> MotifMatrix b
+    consMostProbableMotif mm bs = consMotif m0 mm
+      where
+        m0 = mostProbableMotif k pm bs
+        k  = ncol mm
+        pm = profileMatrixWithPseudoCount 1 mm
+                                              
+
+{-
+Instead of a profile, we can also start with a kmer as a seed
+-}
+greedyMotifsFromKmer :: Base b => [b] -> [[b]] ->  MotifMatrix b
+greedyMotifsFromKmer word = rowReverse . greedilyGrownMotifMatrix kmm
+  where
+    kmm = MotifMatrix 1 (length word) [word]
+                                       
+greedilySearchedMotifs :: Base b => Int -> [[b]] -> MotifMatrix b
+greedilySearchedMotifs k (seq0:seqs') = fst $ minimumBy (comparing snd) 
+                                       (map motifsAndScores $ allKmers k seq0)
+  where
+    motifsAndScores km = (mm, score)
+      where
+        score     = foldl (\s motif -> s + (hamdist motif consensus)) 0 (rows mm)
+        mm        = greedyMotifsFromKmer km seqs'
+        consensus = consensusMotif mm
+
+
+
+minByOrFirst :: (Foldable f, Ord a) => (a -> a -> Ordering) -> a -> f a -> a
+minByOrFirst c t0 = foldl (\currmax t -> case c currmax t of
+                                           GT -> t
+                                           _  -> currmax) t0
+
+maxByOrFirst :: (Foldable f, Ord a) => (a -> a -> Ordering) -> a -> f a -> a
+maxByOrFirst c t0 = foldl (\currmax t -> case c currmax t of
+                                           LT -> t
+                                           _  -> currmax) t0
